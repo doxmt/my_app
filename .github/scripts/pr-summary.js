@@ -25,28 +25,42 @@ function render(state) {
         ? '🚀 배포 완료'
         : '❌ 배포 실패';
 
-  const detail = [];
+  let analyzeCell = '⏳ 실행 중';
+  let testCell = '⏳ 실행 중';
   if (ci) {
-    detail.push(`분석 ${ci.analyze ? '✓' : '✗'}`);
+    analyzeCell = ci.analyze ? '통과' : '❌ 실패';
     const t = ci.tests;
-    if (t && t.failed) detail.push(`테스트 ${t.failed}개 ✗`);
-    else if (t) detail.push(`테스트 ${t.passed}개 ${ci.testOk ? '✓' : '✗'}`);
-    else detail.push(`테스트 ${ci.testOk ? '✓' : '✗'}`);
+    if (t && t.failed) testCell = `❌ ${t.failed}개 실패`;
+    else if (t) testCell = ci.testOk ? `${t.passed}개 통과` : '❌ 실패';
+    else testCell = ci.testOk ? '통과' : '❌ 실패';
   }
-  if (state.sha) detail.push(`\`${state.sha.slice(0, 7)}\``);
-  if (ci && ci.url) detail.push(`[로그](${ci.url})`);
-  if (deploy && deploy.state === 'success' && deploy.url) detail.push(`[미리보기](${deploy.url})`);
-  if (deploy && deploy.state === 'failure' && deploy.logUrl) detail.push(`[배포 로그](${deploy.logUrl})`);
 
-  const lines = [`**${ciPart} · ${deployPart}**`, detail.join(' · ')];
+  let previewCell = '⏳ 배포 중';
+  if (deploy && deploy.state === 'success') previewCell = deploy.url ? `[열기](${deploy.url})` : '완료';
+  if (deploy && deploy.state === 'failure') previewCell = deploy.logUrl ? `❌ [배포 로그](${deploy.logUrl})` : '❌ 실패';
+
+  const footer = [];
+  if (state.sha) footer.push(`커밋 \`${state.sha.slice(0, 7)}\``);
+  if (ci && ci.url) footer.push(`[CI 로그](${ci.url})`);
+
+  const lines = [
+    `### ${ciPart} · ${deployPart}`,
+    '',
+    '| 🔍 정적 분석 | 🧪 테스트 | 🌐 미리보기 |',
+    '|:---:|:---:|:---:|',
+    `| ${analyzeCell} | ${testCell} | ${previewCell} |`,
+  ];
 
   if (prod) {
-    if (prod.state === 'success') lines.push(`🚀 운영 배포 완료 · [사이트](${prod.url})`);
-    else if (prod.state === 'failure') lines.push(`❌ 운영 배포 실패 · [배포 로그](${prod.logUrl})`);
-    else lines.push('⏳ 운영 배포 중');
+    lines.push('');
+    if (prod.state === 'success') lines.push(`> 🚀 **운영 배포 완료** · [사이트 열기](${prod.url})`);
+    else if (prod.state === 'failure') lines.push(`> ❌ **운영 배포 실패** · [배포 로그](${prod.logUrl})`);
+    else lines.push('> ⏳ **운영 배포 중**');
   }
 
-  return lines.filter(Boolean).join('\n');
+  if (footer.length) lines.push('', `<sub>${footer.join(' · ')}</sub>`);
+
+  return lines.join('\n');
 }
 
 function toBody(state) {
