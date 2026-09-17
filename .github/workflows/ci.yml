@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [develop, main]
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -15,5 +19,23 @@ jobs:
         with:
           channel: stable
       - run: flutter pub get
-      - run: flutter analyze
-      - run: flutter test
+      - id: analyze
+        run: flutter analyze
+        continue-on-error: true
+      - id: test
+        run: flutter test 2>&1 | tee test.log
+        shell: bash
+        continue-on-error: true
+      - name: 결과 요약 댓글
+        if: always()
+        uses: actions/github-script@v9
+        env:
+          ANALYZE_OUTCOME: ${{ steps.analyze.outcome }}
+          TEST_OUTCOME: ${{ steps.test.outcome }}
+          TEST_LOG: test.log
+        with:
+          script: |
+            await require('./.github/scripts/pr-summary.js').reportCi({ github, context, core })
+      - name: 실패 처리
+        if: steps.analyze.outcome != 'success' || steps.test.outcome != 'success'
+        run: exit 1

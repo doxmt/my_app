@@ -67,7 +67,7 @@ gh pr create \
   --base develop
 ```
 
-본문에 `Closes #{이슈번호}` 필수 — PR 머지 시 이슈 자동 닫힘
+본문에 `Closes #{이슈번호}` 필수 — PR 머지 시 이슈 자동 닫힘 (레포 기본 브랜치가 `develop`이라 develop 머지에서도 동작)
 
 ## 머지
 
