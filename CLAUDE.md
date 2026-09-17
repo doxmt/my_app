@@ -29,6 +29,8 @@
 
 > 사용자가 반복 실수나 잘못된 가정을 지적하면, 다음 세션에서 반복하지 않도록 이 섹션에 짧게 추가한다.
 
+- `docs/current_state.md`와 `docs/work_log.md`는 `/wrap`에서만 작성한다. `/plan`·`/start` 중이나 subagent(writer/executor)에게 이 파일 수정을 맡기지 않는다.
+
 ## Commands
 
 ```bash
