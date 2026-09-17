@@ -77,11 +77,16 @@ async function upsert({ github, context, prNumber, sha, patch }) {
 }
 
 function parseTests(log) {
-  // flutter test 마지막 줄: "00:01 +9: All tests passed!" / "00:02 +7 -2: Some tests failed."
+  // 이전 형식: "00:01 +9: All tests passed!" / "00:02 +7 -2: Some tests failed."
   const matches = [...log.matchAll(/\+(\d+)(?: ~\d+)?(?: -(\d+))?: (?:All tests passed|Some tests failed)/g)];
   const last = matches[matches.length - 1];
-  if (!last) return null;
-  return { passed: Number(last[1]), failed: Number(last[2] || 0) };
+  if (last) return { passed: Number(last[1]), failed: Number(last[2] || 0) };
+
+  // 새 형식: "🎉 9 tests passed." / "7 tests passed, 2 failed."
+  const passed = log.match(/(\d+) tests? passed/);
+  const failed = log.match(/(\d+) (?:tests? )?failed/);
+  if (!passed && !failed) return null;
+  return { passed: Number(passed ? passed[1] : 0), failed: Number(failed ? failed[1] : 0) };
 }
 
 async function reportCi({ github, context, core }) {
