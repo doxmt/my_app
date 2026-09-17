@@ -25,7 +25,7 @@ planner 초안의 `Main Command Requests`에서 코드베이스 사실 확인을
 
 planner 초안의 `Main Command Requests`에서 외부 공식 문서, API/프레임워크 참조, 패키지 버전 호환성 확인을 요청하면 document-specialist 에이전트를 호출하라.
 
-planner 초안의 `Main Command Requests`에서 `docs/adr.md`, `docs/architecture.md`, `docs/prd.md`, `docs/roadmap.md` 업데이트가 필요하다고 요청하면 writer 에이전트를 호출하라.
+planner 초안의 `Main Command Requests`에서 `docs/overview.md`, `docs/adr.md`, `docs/architecture.md`, `docs/prd.md`, `docs/roadmap.md` 업데이트가 필요하다고 요청하면 writer 에이전트를 호출하라.
 단, 계획 파일 자체는 planner가 작성하게 하라.
 
 마지막으로 planner 에이전트를 다시 호출하여 계획 파일을 생성하게 하라.

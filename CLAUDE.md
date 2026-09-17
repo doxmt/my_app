@@ -6,16 +6,19 @@
 
 개발자 기술면접 준비 앱. Flutter 하나로 Android/iOS/Web을 만들고, 백엔드는 Supabase다.
 기능: 카테고리별 서술형 문제풀이 + 오답노트, 이력서 기반 AI 모의면접, OAuth 회원가입, 어드민 콘텐츠 파이프라인.
-진행 순서와 현재 위치는 `docs/roadmap.md`, `docs/current_state.md`, 결정 배경은 `docs/adr.md`를 본다.
+전체 설계 기준 문서는 `docs/overview.md`다. 진행 순서와 현재 위치는 `docs/roadmap.md`, `docs/current_state.md`, 결정 배경은 `docs/adr.md`를 본다.
+설계를 바꾸면 `docs/overview.md`와 해당 주제 문서(prd/architecture/adr/roadmap)를 함께 고친다.
 
 ## Non-Obvious Rules
 
 - 터미널 멀티플렉서는 tmux가 아닌 **cmux**를 사용한다. tmux 명령어가 필요한 경우 cmux 동등 명령어로 대체하라.
 - 개발 순서는 핵심 기능 → OAuth 회원가입(M4) → 어드민(M5)이다. 해당 마일스톤 전에는 로그인 화면이나 어드민 기능을 만들지 않는다.
-- 문제풀이는 로그인 없이 기기 로컬에만 저장한다. `signInAnonymously()`는 모의면접 기능 진입 시에만 호출한다.
+- 비회원은 로그인(익명 로그인 포함) 없이 쓴다. 비회원의 학습 기록·이력서·면접 대화는 기기에만 저장하고 서버에 두지 않는다.
+- 비회원 사용량은 `X-Device-Id` 헤더와 IP 해시로 `guest_daily_usage`에서 센다. 기기 ID는 한도 계산용일 뿐 데이터 조회 키로 쓰지 않는다.
 - LLM API 호출과 API 키는 Supabase Edge Function 안에만 둔다. Flutter 코드에서 LLM을 직접 호출하지 않는다.
 - LLM 호출은 반드시 `LlmProvider` 어댑터를 거친다. 특정 벤더 SDK를 호출부에서 직접 쓰지 않는다.
-- `daily_usage`는 `increment_daily_usage` RPC로만 증가시킨다. 사용량 한도 숫자는 코드에 하드코딩하지 않고 `rate_limit_config`에서 읽는다.
+- 사용량은 `increment_daily_usage`(회원) / `increment_guest_usage`(비회원) RPC로만 증가시킨다. 한도 숫자는 코드에 하드코딩하지 않고 `rate_limit_config`에서 읽는다.
+- Supabase 프로젝트는 새 테이블을 Data API에 자동 노출하지 않고 RLS를 자동으로 켠다. 마이그레이션에 `GRANT`와 RLS 정책(공개 테이블의 select 포함)을 반드시 함께 쓴다.
 - `categories`/`questions`는 앱에서 쓰기 불가다. M5 전까지는 SQL 시드로, 이후에는 어드민 승인 흐름으로만 추가한다.
 - PDF 텍스트 추출은 클라이언트나 Edge Function에서 하지 않는다 (Vercel Node 함수 담당).
 - 어드민(`admin/`)은 Flutter가 아닌 React 웹앱이다.

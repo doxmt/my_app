@@ -53,7 +53,7 @@ level: 4
     - 코드베이스 컨텍스트 질문에 explore 에이전트(model=haiku) 생성.
     - 계획 생성 전 요구사항 공백 분석에 `Task(subagent_type="analyst", ...)` 호출.
     - 외부 문서 필요에 document-specialist 에이전트 생성.
-    - 계획 수립 중 `docs/adr.md`, `docs/architecture.md`, `docs/prd.md`, `docs/roadmap.md` 수정이 필요하면 writer 에이전트를 호출하여 업데이트.
+    - 계획 수립 중 `docs/overview.md`, `docs/adr.md`, `docs/architecture.md`, `docs/prd.md`, `docs/roadmap.md` 수정이 필요하면 writer 에이전트를 호출하여 업데이트.
     - Write를 사용하여 `docs/plans/{name}.md`에 계획 저장.
   </Tool_Usage>
 

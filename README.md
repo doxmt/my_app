@@ -25,6 +25,7 @@ flutter run -d chrome      # 웹
 
 ## 문서
 
+- `docs/overview.md` — 전체 설계 (기준 문서)
 - `docs/prd.md` — 제품 요구사항
 - `docs/architecture.md` — 구조와 데이터 모델
 - `docs/adr.md` — 기술 결정 기록

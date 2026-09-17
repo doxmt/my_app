@@ -7,12 +7,13 @@
 - 안 쓰는 `macos/`, `linux/`, `windows/` 폴더 삭제
 - `CLAUDE.md`, `docs/prd.md`, `docs/architecture.md`, `docs/adr.md`, `docs/roadmap.md` 작성
 
-## M1. Supabase 세팅 + 익명 인증 + 내비게이션 뼈대
-- Supabase 프로젝트 생성, `supabase/migrations/`에 스키마·RLS 작성 및 적용 (pgvector 확장 포함)
-- 익명 로그인만 활성화 (OAuth는 M4)
+## M1. Supabase 세팅 + 기기 ID + 내비게이션 뼈대
+- `supabase init`/`link`, `supabase/migrations/`에 스키마·RLS·GRANT 작성 및 적용 (pgvector 확장 포함)
+- 로그인 없음 (OAuth는 M4)
 - `supabase_flutter`, `flutter_riverpod`, `go_router` 추가, `main.dart`를 Supabase 초기화 + `ProviderScope` + `MaterialApp.router`로 교체
+- 최초 실행 시 기기 ID 생성·보관
 - 기본 라우트(`/`, `/categories`, `/wrong-notes`, `/interview`)와 빈 화면
-- 완료 기준: 세 플랫폼에서 앱이 뜨고, 카테고리 목록이 Supabase에서 조회됨(빈 상태 포함)
+- 완료 기준: 세 플랫폼에서 앱이 뜨고, 로그인 없이 카테고리 목록이 Supabase에서 조회됨(빈 상태 포함)
 
 ## M2. 카테고리/문제풀이 + 로컬 오답노트
 - SQL 시드 스크립트로 테스트용 카테고리·문제 삽입
@@ -21,21 +22,21 @@
 - "오답노트에 저장" 버튼, 오답노트 목록·해결 처리 — 전부 기기 로컬 저장
 - 완료 기준: 로그인 없이 문제풀이와 오답노트가 앱 재시작 후에도 유지됨
 
-## M3. 이력서 업로드 + 모의면접 (익명 사용자)
-- 모의면접 진입 시 `signInAnonymously()`
-- 이력서 텍스트 붙여넣기(우선), PDF 업로드 + Vercel 파싱 함수
-- `interview-chat` Edge Function: LLM 어댑터 2종, 프롬프트 구성, 스트리밍
-- `increment_daily_usage` RPC, `rate_limit_config` 초기값
+## M3. 이력서 입력 + 모의면접 (비회원)
+- 이력서 텍스트 붙여넣기(우선), PDF → Vercel 파싱 함수(크기·호출 제한 포함) → 텍스트 반환
+- 이력서·면접 대화를 기기에 저장
+- `interview-chat` Edge Function: LLM 어댑터 2종, 요청 본문의 이력서·대화로 프롬프트 구성, 대화 길이 제한, 스트리밍
+- `increment_guest_usage` RPC (기기 ID + IP 해시), `rate_limit_config` 초기값
 - 채팅 UI (스트리밍 말풍선, 남은 사용량 배너, 한도 초과 안내)
-- 완료 기준: 이력서 내용을 참고한 면접 대화가 되고, 한도 초과 시 429 안내가 뜸. `LLM_PROVIDER` 변경으로 제공자 전환됨
+- 완료 기준: 로그인 없이 이력서 내용을 참고한 면접 대화가 되고, 기기 한도·IP 한도 초과 시 각각 429 안내가 뜸. `LLM_PROVIDER` 변경으로 제공자 전환됨
 
 ## M4. OAuth 회원가입
 - Supabase Auth에 Google/Apple/GitHub/Kakao 설정
 - 로그인 화면 (`google_sign_in`, `sign_in_with_apple`, GitHub/Kakao는 `signInWithOAuth`)
-- `linkIdentity`로 익명 계정 승격
-- 로컬 학습 기록 → `practice_attempts`/`wrong_notes` 업로드 (중복 방지)
-- 회원은 `free` tier 한도 적용
-- 완료 기준: 익명 상태의 이력서·대화·학습 기록이 가입 후에도 남아 있고, 다른 계정 데이터는 보이지 않음
+- 기기의 학습 기록·오답노트·이력서·면접 대화 → DB 업로드 (중복 방지), 이후 회원 데이터는 DB 기준
+- `interview-chat`에 회원 경로 추가 (JWT, `increment_daily_usage`, DB 이력 사용, `interview_messages` 저장)
+- 회원은 `free` 한도 적용
+- 완료 기준: 비회원 때 쌓은 기록이 가입 후 계정에 남아 있고, 다른 계정 데이터는 보이지 않음
 
 ## M5. 어드민 페이지 + 콘텐츠 자동화
 - React 어드민 웹앱 (`admin/`), 별도 Vercel 배포, `is_admin` 확인

@@ -3,7 +3,7 @@
 ## 기술 스택
 
 - **앱**: Flutter (Android / iOS / Web), Riverpod(상태관리), go_router(라우팅)
-- **백엔드**: Supabase — Postgres(+pgvector), Auth(익명 로그인 + OAuth), Edge Functions(Deno), Storage
+- **백엔드**: Supabase — Postgres(+pgvector), Auth(OAuth, M4), Edge Functions(Deno)
 - **LLM**: Anthropic / OpenAI — Edge Function 내부 어댑터로 교체 가능 (`LLM_PROVIDER` env var)
 - **PDF 추출**: 별도 Vercel Node 서버리스 함수 (Deno에는 쓸 만한 PDF 파서가 없음)
 - **어드민**: 별도 React 웹앱 (M5, 프레임워크 미정)
@@ -17,19 +17,20 @@ lib/
   app/                 router.dart, theme.dart, app_config.dart
   core/
     supabase/          Supabase 클라이언트 provider
-    storage/           local_practice_store.dart (비회원 로컬 학습 기록)
+    device/            device_id.dart (최초 실행 시 UUID 생성·보관)
+    storage/           비회원 로컬 저장 (학습 기록, 이력서, 면접 대화)
     error/             Result / Failure 타입
   features/
     categories/        카테고리 탐색
     practice/          문제풀이 흐름
     wrong_notes/       오답노트
-    resume/            이력서 업로드
+    resume/            이력서 입력
     interview/         모의면접 채팅
     usage/             남은 사용량 표시
     auth/              OAuth 로그인 (M4에서 추가)
 
 supabase/
-  migrations/          스키마, RLS, RPC
+  migrations/          스키마, RLS, GRANT, RPC
   functions/
     interview-chat/    모의면접 + LLM 어댑터
     content-pipeline/  문제 수집 → 초안 → 중복 비교 (M5)
@@ -39,28 +40,36 @@ admin/                 React 어드민 웹앱 (M5)
 
 ## 패턴
 
-- **feature-first + 3계층**: 각 feature는 `data/`(Supabase 구현) · `domain/`(순수 Dart 모델, 리포지토리 인터페이스) · `presentation/`(위젯, Riverpod provider)로 나눈다. domain은 Supabase 없이 단위 테스트한다.
+- **feature-first + 3계층**: 각 feature는 `data/`(Supabase·로컬 구현) · `domain/`(순수 Dart 모델, 리포지토리 인터페이스) · `presentation/`(위젯, Riverpod provider)로 나눈다. domain은 Supabase 없이 단위 테스트한다.
+- **비회원은 로그인 없음**: 비회원은 Supabase Auth 세션이 없다. 데이터(학습 기록, 이력서, 면접 대화)는 전부 기기에 저장하고, 서버에는 사용량 카운터만 남긴다. 리포지토리는 "로컬 구현"과 "Supabase 구현"을 두고 로그인 여부로 고른다.
+- **기기 ID**: 최초 실행 시 UUID를 만들어 로컬에 보관하고 Edge Function 호출 때 `X-Device-Id` 헤더로 보낸다. 서버는 이 값을 신뢰하지 않고 한도 계산 키로만 쓴다.
 - **LLM 호출은 서버에서만**: 앱은 Edge Function만 호출하고, API 키는 Supabase secrets에만 둔다.
 - **LLM 어댑터**: `LlmProvider` 인터페이스(`streamChat`) + `AnthropicProvider` / `OpenAiProvider`, `factory.ts`가 env var로 선택.
-- **콘텐츠 쓰기는 앱에서 불가**: `categories` / `questions`는 공개 읽기 전용. 새 문제는 어드민 승인 흐름(`question_candidates` → `questions`)으로만 들어간다. M5 이전에는 SQL 시드 스크립트로 넣는다.
+- **콘텐츠 쓰기는 앱에서 불가**: `categories` / `questions`는 공개 읽기 전용. 새 문제는 어드민 승인 흐름(`question_candidates` → `questions`)으로만 들어간다. M5 이전에는 SQL 시드로 넣는다.
+- **권한은 명시적으로**: 프로젝트 설정상 새 테이블이 Data API에 자동 노출되지 않고 RLS가 자동으로 켜진다. 마이그레이션마다 `GRANT`와 RLS 정책(공개 테이블의 select 포함)을 직접 작성한다.
 
 ## 데이터 모델
 
 | 테이블 | 용도 | 접근 |
 |---|---|---|
-| `profiles` | auth.users 확장 (`is_anonymous`, `is_admin`, `plan_tier`, `stripe_customer_id`) | 본인만 |
+| `profiles` | auth.users 확장 (`is_admin`, `plan_tier`, `stripe_customer_id`) | 본인만 |
 | `categories` | 카테고리 (`parent_id`로 하위 분류) | 공개 읽기 |
 | `questions` | 문제 (`type`, `prompt`, `model_answer`, `embedding vector(1536)`) | 공개 읽기 |
 | `question_candidates` | 수집된 문제 후보 (`duplicate_of`, `similarity_score`, `status`) | 어드민만 |
-| `practice_attempts` | 답변 시도 기록 | 본인만 |
-| `wrong_notes` | 오답노트 (`unique(user_id, question_id)`) | 본인만 |
-| `resumes` | 이력서 (`source_type`, `extracted_text`, `extraction_status`) | 본인만 |
-| `interview_sessions` | 모의면접 세션 (`provider`, `model`, `status`) | 본인만 |
-| `interview_messages` | 대화 메시지 | 세션 소유자만 (join 정책) |
-| `daily_usage` | 일일 사용량 `PK(user_id, usage_date)` | 본인 읽기만, 쓰기는 RPC |
-| `rate_limit_config` | tier별 일일 한도 (`anonymous` / `free` / `paid`) | 공개 읽기, 대시보드에서만 수정 |
+| `practice_attempts` | 답변 시도 기록 (회원) | 본인만 |
+| `wrong_notes` | 오답노트 (회원, `unique(user_id, question_id)`) | 본인만 |
+| `resumes` | 이력서 (회원, `source_type`, `extracted_text`) | 본인만 |
+| `interview_sessions` | 모의면접 세션 (회원, `provider`, `model`, `status`) | 본인만 |
+| `interview_messages` | 대화 메시지 (회원) | 세션 소유자만 (join 정책) |
+| `daily_usage` | 회원 일일 사용량 `PK(user_id, usage_date)` | 본인 읽기만, 쓰기는 RPC |
+| `guest_daily_usage` | 비회원 일일 사용량 `PK(subject_type, subject_key, usage_date)`, `subject_type`은 `device`/`ip`, IP는 해시로 저장 | 클라이언트 접근 없음 (Edge Function만) |
+| `rate_limit_config` | 한도 (`guest_device` / `guest_ip` / `free` / `paid`) | 공개 읽기, 대시보드에서만 수정 |
 
-사용량 증가는 `increment_daily_usage(p_user_id, p_limit)` SECURITY DEFINER 함수 하나로 처리한다. `update ... where count < limit` 한 문장으로 체크와 증가를 같이 해서 동시 요청에도 한도를 넘지 않는다.
+사용량 증가는 SECURITY DEFINER 함수로만 한다.
+- `increment_daily_usage(p_user_id, p_limit)`: 회원용. `update ... where count < limit` 한 문장으로 체크와 증가를 같이 한다.
+- `increment_guest_usage(p_device_key, p_ip_key, p_device_limit, p_ip_limit)`: 비회원용. 기기·IP 두 행을 잠그고 둘 다 한도 안일 때만 둘 다 증가시킨다.
+
+IP 한도는 같은 IP를 여러 사람이 쓰는 경우(학교, 회사)를 고려해 기기 한도보다 넉넉하게 잡는다.
 
 ## 데이터 흐름
 
@@ -69,17 +78,25 @@ admin/                 React 어드민 웹앱 (M5)
 카테고리/문제 조회(Supabase 공개 읽기) → 답변 작성 → 모범답안 확인 → 자가 채점
   → (버튼) 오답노트 저장 → 기기 로컬 저장소
 
-[모의면접]
-기능 진입 → signInAnonymously() (최초 1회)
-  → 이력서 입력: 텍스트(즉시 저장) | PDF(Storage 업로드 → Vercel 파싱 함수 → extracted_text)
-  → 메시지 전송 → Edge Function interview-chat
-      → JWT로 user_id 확인 → increment_daily_usage (초과 시 429)
-      → 이력서 + 카테고리 + 대화 이력으로 프롬프트 구성
-      → LlmProvider.streamChat → 스트리밍 응답 → interview_messages 저장
+[이력서 입력]
+텍스트 붙여넣기 → 그대로 사용
+PDF → Vercel 파싱 함수로 직접 전송 → 추출된 텍스트 반환
+  → 비회원: 기기에 저장 / 회원: resumes 테이블에 저장
+
+[모의면접 — 비회원]
+메시지 전송 → Edge Function interview-chat
+  (publishable key + X-Device-Id, 본문에 이력서 텍스트·카테고리·이전 대화 포함)
+  → 기기 ID·IP 해시로 increment_guest_usage (초과 시 429)
+  → 이전 대화 길이 제한 확인 → 프롬프트 구성 → LlmProvider.streamChat → 스트리밍 응답
+  → 앱이 대화를 기기에 저장 (서버에는 사용량만 남음)
+
+[모의면접 — 회원, M4 이후]
+메시지 전송 (JWT) → user_id 확인 → increment_daily_usage (초과 시 429)
+  → DB의 이력서·대화 이력으로 프롬프트 구성 → 스트리밍 응답 → interview_messages 저장
 
 [회원가입 — M4]
-OAuth 로그인 → linkIdentity로 익명 계정 승격 (데이터 유지)
-  → 로컬 학습 기록을 practice_attempts / wrong_notes로 업로드 → tier: anonymous → free
+OAuth 로그인 → 기기의 학습 기록·이력서·면접 대화를 DB로 업로드 (중복 방지) → 로컬 사본 삭제
+  → 한도: guest → free
 
 [콘텐츠 수집 — M5]
 어드민 버튼 or 커맨드 → 자료 입력 → LLM 문제 초안 → 임베딩 → pgvector 유사도 비교
