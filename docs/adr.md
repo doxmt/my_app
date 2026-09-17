@@ -15,7 +15,7 @@
 ## ADR-002: 상태관리 Riverpod, 라우팅 go_router
 
 **날짜:** 2026-09-17
-결정: 상태관리는 `flutter_riverpod`, 라우팅은 `go_router`를 쓴다.
+결정: 상태관리는 `flutter_riverpod`, 라우팅은 `go_router`를 쓴다. 웹에서는 `usePathUrlStrategy()`로 path URL(`/categories` 등)을 지원하고, `vercel.json`에 SPA rewrite(`/(.*)` → `/index.html`)를 설정한다.
 이유: 비동기 Supabase 호출과 스트리밍 채팅을 `AsyncNotifier`/`StreamProvider`로 다루기 쉽고, 테스트에서 provider override가 간단하다. 웹에서는 실제 URL과 인증 가드(redirect)가 필요하다.
 대안: Bloc(이벤트/상태 클래스 보일러플레이트가 1인 개발에 과함), Provider(비동기·DI 도구가 약함).
 트레이드오프: Riverpod 개념(ref, provider 종류)을 익혀야 한다.
@@ -79,3 +79,23 @@
 이유: 내부 도구라 Flutter일 필요가 없다. 문제를 매번 손으로 쓰는 대신 반자동화한다. 문구가 달라도 같은 개념인 문제를 잡으려면 문자열 비교보다 임베딩이 낫다.
 대안: Flutter 앱 안에 어드민 화면, 수동 입력 CMS, pg_trgm 문자열 유사도.
 트레이드오프: 임베딩은 한 제공자(OpenAI)로 고정해야 비교가 일관된다. 배포 대상이 하나 더 늘어난다.
+
+---
+
+## ADR-009: Supabase 접근 정보는 환경 설정으로, publishable key 사용
+
+**날짜:** 2026-09-17
+결정: Supabase URL과 publishable key는 `String.fromEnvironment`로 런타임에 읽는다. 로컬 개발은 `--dart-define-from-file=env/dev.json` (gitignore, `env/dev.json.example` 커밋), Vercel 웹 배포는 환경변수를 `--dart-define`으로 전달한다. CI(`flutter test`)는 provider override로 Supabase 없이 돌기 때문에 값이 필요 없다. 값이 없으면 앱 시작 시 명확한 에러를 보인다. `supabase_flutter`의 `Supabase.initialize()`는 deprecated `anonKey` 대신 `publishableKey` 파라미터를 사용한다.
+이유: 민감한 키를 코드에 하드코딩하지 않는다. Supabase publishable key는 공개 안전(CORS 필터링됨)이지만 여전히 환경 변수로 주입하는 것이 관례다. 플랫폼별로 다른 Supabase 프로젝트를 교체하기 쉽다.
+대안: 코드에 키 하드코딩, 런타임 서버에서 설정 다운로드.
+트레이드오프: 개발 환경 설정 파일을 관리해야 한다. Vercel에 환경 변수를 미리 등록해야 한다.
+
+---
+
+## ADR-010: 하단 탭 3개, 모바일 화면 우선
+
+**날짜:** 2026-09-17
+결정: 하단 탭은 홈(`/`) · 모의면접(`/interview`) · 내 정보(`/me`) 3개다. 홈에서 분야를 고르고, 분야 화면에서 학습 방식을 고른 뒤 주제로 들어간다. 오답노트(`/me/wrong-notes`)·학습 기록·이력서 관리는 내 정보 안에 둔다. 화면은 모바일 레이아웃을 먼저 만들고, 웹 전용 레이아웃(넓은 화면)은 M6에서 한다. 웹 빌드·배포·path URL은 M1부터 유지한다.
+이유: 모의면접은 핵심 기능이라 탭으로 바로 가게 한다. 오답노트는 자주 쓰지만 학습 흐름의 부속이라 내 정보에 모은다. 모바일과 웹은 UI 차이가 커서 한 번에 맞추면 작업이 늘어난다.
+대안: 하단 탭 4개(홈/카테고리/오답노트/면접), 탭 없는 홈 허브, 처음부터 반응형 레이아웃.
+트레이드오프: M6 전까지 웹은 모바일 레이아웃이 넓은 화면에 그대로 보인다. 오답노트까지 한 단계 더 들어가야 한다.
