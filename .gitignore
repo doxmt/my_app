@@ -50,3 +50,6 @@ app.*.map.json
 .widget_preview/
 .vercel
 _flutter/
+
+# Local env (Supabase 키). env/dev.json.example만 커밋한다.
+env/dev.json
