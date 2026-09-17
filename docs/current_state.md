@@ -13,6 +13,8 @@
 - M1. Supabase 세팅 + 익명 인증 + 내비게이션 뼈대 (`docs/roadmap.md` 참고)
 
 ## 참고사항
-- M1 시작 전에 Supabase 프로젝트를 만들어야 한다 (URL, anon key 필요)
+- Supabase 프로젝트 생성 완료: ref `bmewpbkllmlikzqkxalw` (Tokyo), URL `https://bmewpbkllmlikzqkxalw.supabase.co`, publishable key는 대시보드 또는 `supabase projects api-keys --project-ref bmewpbkllmlikzqkxalw`로 확인
+- Supabase 설정: Data API 켬, 새 테이블 자동 노출 끔(테이블별 GRANT 필요), 자동 RLS 켬(공개 테이블도 select 정책 필요)
+- Supabase CLI는 로그인되어 있으나 아직 `supabase init`/`supabase link` 전이다
 - OAuth 회원가입(M4)과 어드민 페이지(M5)는 핵심 기능 이후에 진행한다
 - `lib/main.dart`는 아직 기본 카운터 템플릿이다
