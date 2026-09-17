@@ -2,20 +2,24 @@
 
 @docs/architecture.md
 
-## Harness Template Note
-
-이 파일과 `docs/architecture.md`, `docs/prd.md`, `docs/adr.md`는 새 프로젝트 초기화용 템플릿이다.
-프로젝트를 시작할 때 이 하네스를 불러온 뒤, 플랜모드에서 확정된 계획을 바탕으로 중괄호 플레이스홀더를 채운다.
-하네스 배포본에서는 플레이스홀더가 비어 있는 것이 정상이다.
-
 ## Project Context
 
-Flutter로 Android/iOS 앱을 개발하고, 같은 코드베이스를 웹(`flutter build web`)으로도 배포한다.
-아직 초기 세팅 단계이며 구체적인 기능/화면 설계는 `/plan`으로 확정한다.
+개발자 기술면접 준비 앱. Flutter 하나로 Android/iOS/Web을 만들고, 백엔드는 Supabase다.
+기능: 카테고리별 서술형 문제풀이 + 오답노트, 이력서 기반 AI 모의면접, OAuth 회원가입, 어드민 콘텐츠 파이프라인.
+진행 순서와 현재 위치는 `docs/roadmap.md`, `docs/current_state.md`, 결정 배경은 `docs/adr.md`를 본다.
 
 ## Non-Obvious Rules
 
 - 터미널 멀티플렉서는 tmux가 아닌 **cmux**를 사용한다. tmux 명령어가 필요한 경우 cmux 동등 명령어로 대체하라.
+- 개발 순서는 핵심 기능 → OAuth 회원가입(M4) → 어드민(M5)이다. 해당 마일스톤 전에는 로그인 화면이나 어드민 기능을 만들지 않는다.
+- 문제풀이는 로그인 없이 기기 로컬에만 저장한다. `signInAnonymously()`는 모의면접 기능 진입 시에만 호출한다.
+- LLM API 호출과 API 키는 Supabase Edge Function 안에만 둔다. Flutter 코드에서 LLM을 직접 호출하지 않는다.
+- LLM 호출은 반드시 `LlmProvider` 어댑터를 거친다. 특정 벤더 SDK를 호출부에서 직접 쓰지 않는다.
+- `daily_usage`는 `increment_daily_usage` RPC로만 증가시킨다. 사용량 한도 숫자는 코드에 하드코딩하지 않고 `rate_limit_config`에서 읽는다.
+- `categories`/`questions`는 앱에서 쓰기 불가다. M5 전까지는 SQL 시드로, 이후에는 어드민 승인 흐름으로만 추가한다.
+- PDF 텍스트 추출은 클라이언트나 Edge Function에서 하지 않는다 (Vercel Node 함수 담당).
+- 어드민(`admin/`)은 Flutter가 아닌 React 웹앱이다.
+- 대상 플랫폼은 Android/iOS/Web뿐이다. 데스크톱 플랫폼 폴더를 다시 만들지 않는다.
 - 플랫폼별 동작 차이(웹 전용 제약, 플러그인 미지원 등)가 생기면 여기에 추가한다.
 
 ## Do Not

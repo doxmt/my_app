@@ -1,17 +1,32 @@
 # my_app
 
-A new Flutter project.
+개발자 기술면접 준비 앱 (Android / iOS / Web).
 
-## Getting Started
+- 카테고리별 서술형 문제풀이 + 오답노트
+- 이력서 기반 AI 모의면접
+- OAuth 회원가입 (Google / Apple / GitHub / Kakao)
 
-This project is a starting point for a Flutter application.
+## 스택
 
-A few resources to get you started if this is your first Flutter project:
+Flutter · Riverpod · go_router · Supabase · Anthropic/OpenAI · Vercel
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+## 실행
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+```bash
+flutter pub get
+flutter run                # 모바일
+flutter run -d chrome      # 웹
+```
+
+## 배포
+
+- `develop` push → Vercel Preview, `main` push → Vercel Production
+- push/PR마다 GitHub Actions에서 `flutter analyze`, `flutter test` 실행
+
+## 문서
+
+- `docs/prd.md` — 제품 요구사항
+- `docs/architecture.md` — 구조와 데이터 모델
+- `docs/adr.md` — 기술 결정 기록
+- `docs/roadmap.md` — 마일스톤
+- `docs/current_state.md` — 현재 진행 상태
