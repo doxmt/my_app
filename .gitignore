@@ -4,6 +4,8 @@
 *.pyc
 *.swp
 .DS_Store
+.claude/settings.local.json
+.claude/logs/
 .atom/
 .build/
 .buildlog/
@@ -46,3 +48,5 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+.vercel
+_flutter/
