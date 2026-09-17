@@ -55,6 +55,7 @@ PR 올리기 전 아래를 모두 통과해야 한다.
 
 - 평소 작업은 모두 `develop`에 푸시한다 (`/start`, `/submit`, `/finish` 사이클 기준).
 - `main`은 릴리즈 시점에만 한 번 푸시한다.
+- 세션 마무리 순서는 `/submit` → CI 확인 → `/wrap` → `/finish`다. `/wrap`이 문서 갱신을 기능 브랜치에 커밋·push해 같은 PR로 머지한다. 기능 브랜치가 없으면 `docs/wrap-날짜` 브랜치로 PR을 만들어 바로 머지한다.
 - GitHub 기본 브랜치는 `develop`이다 (develop 머지에서도 `Closes #N`으로 이슈가 닫히게). Vercel Production 브랜치는 `main`으로 따로 지정돼 있다.
 
 ## 커밋 메세지 규칙

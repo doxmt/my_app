@@ -1,10 +1,12 @@
 ---
 description: 이번 작업 세션을 마무리하고 문서를 업데이트하라.
 argument-hint: ""
-allowed-tools: Read, Edit, Bash(cat:*), Bash(git rev-parse:*)
+allowed-tools: Read, Edit, Bash(cat:*), Bash(git:*), Bash(gh:*)
 ---
 
 이번 세션을 마무리합니다. 아래 순서대로 진행하세요.
+
+`/wrap`은 `/finish` **전에** 실행한다 (`/submit` → CI 통과 확인 → `/wrap` → `/finish`). 문서 갱신이 기능 PR에 함께 들어가 머지와 동시에 develop 문서가 최신이 된다.
 
 **중요: 세션에서 한 작업은 대화 내용에서 바로 파악하세요. 작업 내용 파악을 위해 파일을 읽지 마세요.** (3·5단계에서 기존 문서를 수정할 때만 해당 파일을 읽습니다.)
 
@@ -78,5 +80,25 @@ EOF
 
 이번 세션에서 기능 추가/제거, 성공 기준 변경, MVP 범위 조정 등이 있었다면 `docs/prd.md`를 Read로 읽고 해당 섹션만 Edit으로 수정합니다.
 변경이 없었다면 이 단계는 건너뜁니다.
+
+## 6. 커밋 & 푸시
+
+현재 브랜치를 확인한다: `git branch --show-current`
+
+- **기능 브랜치(열린 PR 있음)**: 갱신한 문서만 커밋하고 push한다. 같은 PR에 반영되며, 이후 `/finish`로 함께 머지된다.
+
+  ```bash
+  git add docs/ && git commit -m "docs: 세션 기록 갱신" && git push
+  ```
+
+- **develop (PR 없이 끝난 세션, 또는 이미 `/finish`한 경우)**: `docs/wrap-YYYY-MM-DD` 브랜치를 만들어 커밋·push하고, develop 대상 PR을 만든 뒤 바로 squash merge한다. 이슈는 만들지 않는다.
+
+  ```bash
+  git checkout -b docs/wrap-YYYY-MM-DD
+  git add docs/ && git commit -m "docs: YYYY-MM-DD 세션 기록 갱신" && git push -u origin HEAD
+  gh pr create --base develop --title "docs: YYYY-MM-DD 세션 기록 갱신" --body "세션 마무리 문서 갱신"
+  gh pr merge --squash --delete-branch
+  git checkout develop && git pull origin develop
+  ```
 
 완료되면 "wrap 완료 ✓" 라고 출력하세요.
