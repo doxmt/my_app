@@ -1,0 +1,17 @@
+name: 배포 결과
+
+on: deployment_status
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  comment:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/github-script@v9
+        with:
+          script: |
+            await require('./.github/scripts/pr-summary.js').reportDeploy({ github, context, core })
