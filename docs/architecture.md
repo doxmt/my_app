@@ -7,7 +7,7 @@
 - **LLM**: Anthropic / OpenAI — Edge Function 내부 어댑터로 교체 가능 (`LLM_PROVIDER` env var)
 - **PDF 추출**: 별도 Vercel Node 서버리스 함수 (Deno에는 쓸 만한 PDF 파서가 없음)
 - **어드민**: 별도 React 웹앱 (M5, 프레임워크 미정)
-- **배포**: 웹은 Vercel(develop → Preview, main → Production, path URL 전략 + SPA rewrite), CI는 GitHub Actions(`flutter analyze` + `flutter test`)
+- **배포**: 웹은 Vercel(develop → Preview, main → Production, path URL 전략 + SPA rewrite), CI는 GitHub Actions(`flutter analyze` + `flutter test`). PR에는 CI·Vercel 배포 결과를 한글 요약 댓글 하나로 갱신(`.github/scripts/pr-summary.js`, `ci.yml` + `pr-deploy.yml`의 `deployment_status`), Vercel 봇 댓글은 끔. GitHub 기본 브랜치는 `develop`
 - **화면**: 하단 탭 3개(홈 `/` · 모의면접 `/interview` · 내 정보 `/me`), `StatefulShellRoute.indexedStack`. 모바일 레이아웃 먼저, 웹 전용 레이아웃은 M6
 - **설정**: Supabase URL/publishable key는 `String.fromEnvironment`로 읽음. 로컬은 `--dart-define-from-file=env/dev.json`(gitignore), Vercel은 환경변수를 `--dart-define`으로 전달 (CI는 불필요)
 - **마이그레이션**: 원격 Supabase에 `supabase db push`로 적용. 로컬 Docker는 쓰지 않음
