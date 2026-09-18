@@ -3,7 +3,7 @@
 ## 기술 스택
 
 - **앱**: Flutter (Android / iOS / Web), Riverpod(상태관리), go_router(라우팅)
-- **백엔드**: Supabase — Postgres(+pgvector), Auth(OAuth, M4), Edge Functions(Deno)
+- **백엔드**: Supabase — Postgres(+pgvector), Auth(OAuth: Google/GitHub, Apple/Kakao는 추후), Edge Functions(Deno)
 - **LLM**: Anthropic / OpenAI — Edge Function 내부 어댑터로 교체 가능 (`LLM_PROVIDER` env var)
 - **PDF 추출**: Vercel Node 서버리스 함수 (`unpdf` 라이브러리, `api/parse-pdf.ts`, 같은 Vercel 프로젝트에서 Flutter 웹과 함께 배포)
 - **어드민**: 별도 React 웹앱 (M5, 프레임워크 미정)
@@ -29,7 +29,7 @@ lib/
     wrong_notes/       오답노트
     resume/            이력서 입력
     interview/         모의면접 채팅 (남은 사용량 배너 포함)
-    auth/              OAuth 로그인 (M4에서 추가)
+    auth/              OAuth 로그인 (Google/GitHub), 로그인 시 로컬 데이터(오답노트·이력서) 자동 이전
 
 api/                   Vercel Node 서버리스 함수 (parse-pdf.ts 등, PDF 텍스트 추출)
 
@@ -46,6 +46,7 @@ admin/                 React 어드민 웹앱 (M5)
 
 - **feature-first + 3계층**: 각 feature는 `data/`(Supabase·로컬 구현) · `domain/`(순수 Dart 모델, 리포지토리 인터페이스) · `presentation/`(위젯, Riverpod provider)로 나눈다. domain은 Supabase 없이 단위 테스트한다.
 - **비회원은 로그인 없음**: 비회원은 Supabase Auth 세션이 없다. 데이터(학습 기록, 이력서, 면접 대화)는 전부 기기에 저장하고, 서버에는 사용량 카운터만 남긴다. 리포지토리는 "로컬 구현"과 "Supabase 구현"을 두고 로그인 여부로 고른다.
+- **리포지토리 분기는 `userId`만으로**: 로그인 여부 판단은 `Session` 객체 전체가 아니라 `currentUserIdProvider`(`String? userId`)로 한다. `Session`을 watch하면 토큰 갱신마다 provider가 rebuild되어 화면이 깜빡인다. 로그인 성공 시 로컬→DB 데이터 이전이 끝날 때까지 이 provider는 null을 유지해, 이전 도중 화면이 회원 리포지토리로 전환되지 않게 한다. `profiles` 행은 `auth.users` insert 트리거(`handle_new_user`)로 자동 생성한다.
 - **기기 ID**: 최초 실행 시 UUID를 만들어 로컬에 보관하고 Edge Function 호출 때 `X-Device-Id` 헤더로 보낸다. 서버는 이 값을 신뢰하지 않고 한도 계산 키로만 쓴다.
 - **LLM 호출은 서버에서만**: 앱은 Edge Function만 호출하고, API 키는 Supabase secrets에만 둔다.
 - **LLM 어댑터**: `LlmProvider` 인터페이스(`streamChat`) + `AnthropicProvider` / `OpenAiProvider`, `factory.ts`가 env var로 선택. Flutter 클라이언트는 `interview-chat`을 `package:http`로 Function URL에 직접 POST해 스트림을 수동 파싱한다 (`supabase_flutter`의 `functions.invoke`는 스트리밍 미지원).
