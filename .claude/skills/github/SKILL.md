@@ -24,17 +24,31 @@ disable-model-invocation: true
 - 버그 수정 → `bug.md`
 - 테스트 추가 → `test.md`
 
+라벨과 GitHub 네이티브 Issue Type을 함께 지정한다 (`--label`로 라벨, `--type`은 gh CLI가 아직 지원하지 않아 라벨만 붙이고 Issue Type은 웹 UI에서 수동으로 맞춘다):
+
 ```bash
 gh issue create \
   --title "feat: 기능명" \
-  --body "..."
+  --body "..." \
+  --label feat
 ```
 
-제목 형식:
-- 기능 추가: `feat: 기능명`
-- 버그 수정: `fix: 버그명`
-- 스타일: `style: 내용`
-- 리팩토링: `refactor: 내용`
+제목 형식과 라벨/Issue Type 매핑:
+
+| 제목 접두사 | 라벨 | Issue Type |
+|---|---|---|
+| `feat:` 기능 추가 | `feat` | Feature |
+| `fix:` 버그 수정 | `fix` | Bug |
+| `style:` 스타일 | (해당 라벨 없음, 필요 시 `refactor`) | Task |
+| `refactor:` 리팩토링 | `refactor` | Task |
+| `chore:` 기타 | `chore` | Task |
+| `docs:` 문서 작업 | `docs` | Task |
+| `test:` 테스트 추가/수정 | `test` | Task |
+| `config:` 환경설정 변경 | `config` | Task |
+| `deploy:` 배포 관련 | `deploy` | Task |
+| `design:` 디자인/UI | `design` | Task |
+
+라벨은 레포에 만들어져 있다(`gh label list`로 확인). PR에도 같은 라벨을 단다.
 
 ## 브랜치 생성
 
@@ -64,7 +78,8 @@ chore: 기타
 gh pr create \
   --title "feat: 기능명" \
   --body "..." \
-  --base develop
+  --base develop \
+  --label feat
 ```
 
 본문에 `Closes #{이슈번호}` 필수 — PR 머지 시 이슈 자동 닫힘 (레포 기본 브랜치가 `develop`이라 develop 머지에서도 동작)
