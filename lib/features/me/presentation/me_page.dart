@@ -12,6 +12,11 @@ class MePage extends StatelessWidget {
       body: ListView(
         children: [
           ListTile(
+            title: const Text('이력서'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.go('/me/resume'),
+          ),
+          ListTile(
             title: const Text('오답노트'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => context.go('/me/wrong-notes'),

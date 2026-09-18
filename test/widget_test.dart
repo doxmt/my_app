@@ -4,10 +4,25 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:my_app/features/categories/domain/category.dart';
 import 'package:my_app/features/categories/domain/category_repository.dart';
 import 'package:my_app/features/categories/presentation/categories_providers.dart';
+import 'package:my_app/features/resume/domain/resume.dart';
+import 'package:my_app/features/resume/domain/resume_repository.dart';
+import 'package:my_app/features/resume/presentation/resume_providers.dart';
 import 'package:my_app/features/wrong_notes/domain/wrong_note.dart';
 import 'package:my_app/features/wrong_notes/domain/wrong_note_repository.dart';
 import 'package:my_app/features/wrong_notes/presentation/wrong_notes_providers.dart';
 import 'package:my_app/main.dart';
+
+class FakeResumeRepository implements ResumeRepository {
+  Resume? _resume;
+
+  @override
+  Future<Resume?> fetch() async => _resume;
+
+  @override
+  Future<void> save(Resume resume) async {
+    _resume = resume;
+  }
+}
 
 class FakeCategoryRepository implements CategoryRepository {
   FakeCategoryRepository(this._categories, {this.throwError = false});
@@ -75,6 +90,7 @@ Widget _appWith(CategoryRepository repository) {
     overrides: [
       categoryRepositoryProvider.overrideWithValue(repository),
       wrongNoteRepositoryProvider.overrideWithValue(FakeWrongNoteRepository()),
+      resumeRepositoryProvider.overrideWithValue(FakeResumeRepository()),
     ],
     child: const MyApp(),
   );
@@ -118,7 +134,7 @@ void main() {
 
     await tester.tap(find.text('모의면접'));
     await tester.pumpAndSettle();
-    expect(find.text('모의면접 기능은 준비 중입니다.'), findsOneWidget);
+    expect(find.text('모의면접을 시작하려면 이력서를 먼저 입력해주세요.'), findsOneWidget);
 
     await tester.tap(find.text('내 정보'));
     await tester.pumpAndSettle();
