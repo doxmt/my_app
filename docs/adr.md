@@ -119,3 +119,13 @@
 이유: `shared_preferences`는 이미 기기 ID 저장에 쓰이고 있어 새로운 의존성이 없다. Android/iOS/Web 모두 동작한다. 답변 시도 기록까지 저장하면 M2 범위가 커진다.
 대안: sqflite/drift(로컬 DB, 웹 설정 부담 증가), 답변 기록까지 저장(M2 범위 확대).
 트레이드오프: M4에서 회원 전환 시 서버로 올릴 `practice_attempts` 데이터가 없다(오답노트만 이전됨). 학습 통계/기록 기능이 필요해지면 그때부터 쌓아야 한다. `shared_preferences`는 데이터가 커지면 느려질 수 있다(M2의 12문제 + 오답노트 수준에서는 무시할 수 있음). JSON 스키마 버전 관리가 필요하다(M4 업로드 시 옛 형식 호환성).
+
+---
+
+## ADR-013: M3 — PDF 함수 배치, 모의면접 스트리밍 호출 방식, LLM 어댑터 검증 범위
+
+**날짜:** 2026-09-18
+결정: (1) PDF 파싱 함수를 별도 Vercel 프로젝트가 아니라 이 레포 루트 `api/parse-pdf.ts`에 두고 기존 Flutter 웹 배포 프로젝트와 함께 빌드·배포한다. 라이브러리는 `unpdf`를 쓴다. (2) Flutter 클라이언트가 `interview-chat` Edge Function을 호출할 때 `supabase_flutter`의 `functions.invoke()`가 아니라 `package:http`로 Function URL에 직접 POST해 응답을 청크 단위로 읽어 SSE를 수동 파싱한다. 인증 헤더(`apikey`, `Authorization`, `X-Device-Id`)도 수동 구성한다. (3) M3 완료 시점에는 실제 LLM API 키가 없어 실호출 검증을 못 한다. 대신 Anthropic/OpenAI 어댑터는 `LlmProvider` 인터페이스로 코드를 완성하고, 벤더별 요청 형식·스트리밍 이벤트 파싱은 고정 SSE 샘플을 입력으로 쓰는 Deno 단위 테스트로 검증한다. 실제 벤더 API 호출을 통한 종단 스트리밍 검증(iOS에서 실제 LLM 응답으로 면접 대화)은 API 키 확보 후 별도 후속 작업으로 미룬다.
+이유: 별도 Vercel 프로젝트를 만들면 도메인·CI·배포 파이프라인을 따로 관리해야 하는 부담이 크다. `unpdf`는 canvas 의존성이 없어 서버리스 환경에서 안정적이다. `functions.invoke`는 라이브러리 설계상 스트리밍 응답을 지원하지 않는다(Promise 기반 단건 응답만 처리). mock 어댑터를 제품 코드에 추가하면 검증용 분기가 제품에 남고, 실제 벤더 동작과의 괴리 위험이 있다.
+대안: PDF 함수를 별도 Vercel 프로젝트로 분리, `functions.invoke` 폴링으로 스트리밍 우회, Anthropic/OpenAI 어댑터와 함께 mock 어댑터를 `LlmProvider` 구현으로 추가.
+트레이드오프: 레포 루트에 Node `package.json`이 생겨 Flutter 전용이던 루트가 다중 런타임이 된다(첫 배포에서 Flutter web 빌드 회귀 확인 필요). Flutter 클라이언트가 인증 헤더를 수동으로 구성해야 한다(`functions.invoke`가 주던 편의 상실). M3 완료 시점에는 실제 LLM 응답 기반의 스트리밍 종단 검증이 빠진다(API 키 확보 전까지 실사용성 미확인).

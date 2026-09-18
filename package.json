@@ -1,0 +1,10 @@
+{
+  "name": "my_app-api",
+  "private": true,
+  "dependencies": {
+    "unpdf": "^1.8.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0"
+  }
+}

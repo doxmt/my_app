@@ -53,3 +53,24 @@
 - `lib/core/storage/local_json_store.dart`
 - `lib/app/router.dart`, `lib/features/categories/`
 - `docs/plans/m2-practice-wrong-notes.md`
+
+## 2026-09-18
+- `/plan`으로 M3(이력서 입력 + 모의면접, 비회원) 계획 수립 — 인터뷰, explore/document-specialist 조사, writer의 docs 반영까지 완료
+- PDF 함수 배치(같은 레포·같은 Vercel 프로젝트), `functions.invoke` 스트리밍 미지원 대응(http 직접 호출 + SSE 수동 파싱), mock LLM 어댑터 미도입 결정 → ADR-013
+- `/start`로 이슈 #8 생성, `feat/8-이력서-모의면접` 브랜치에서 executor가 계획 6단계 전부 구현
+  - PDF 파싱 Vercel 함수(`api/parse-pdf.ts`, unpdf) 배포 + Firewall rate-limit
+  - `increment_guest_usage` RPC + `rate_limit_config` 초기값(임시값 device 10 / ip 40) 마이그레이션 적용
+  - `interview-chat` Edge Function(Anthropic/OpenAI 어댑터, SSE 스트리밍, 사용량 조회 라우팅) 배포
+  - 이력서 feature(`lib/features/resume`), 모의면접 채팅 UI(`lib/features/interview`) 구현
+  - `flutter analyze` 0 issues, `flutter test` 35개 통과, Deno 테스트 9개 통과, 배포된 엔드포인트 curl로 실동작 검증
+- 진행 중 발견/수정: `vercel.json` buildCommand 256자 제한 → `scripts/vercel-build.sh`로 분리, `.vercelignore` 누락으로 `build/`·`node_modules` 업로드 시도되던 것 수정, service_role GRANT 누락 마이그레이션 추가, `file_picker` 13.1.0 API 변경(정적 메서드로) 대응, 루트에 잘못 생성된 `deno.lock`·`node_modules` gitignore 처리
+- `/submit`으로 커밋 3개(docs / 백엔드 / 프론트엔드)로 나눠 push, PR #9 생성(`Closes #8`, base develop)
+- **미완료로 남김**: iOS 시뮬레이터에서 이력서 입력→PDF→분야 선택→메시지 전송→429/에러 상태→재시작 유지, 이 실제 화면 흐름을 직접 탭해서 확인하는 작업 — 이번 세션엔 GUI 자동화 권한 문제로 못 함, PR 본문에 명시해둠
+
+### 주요 변경 파일
+- `docs/plans/m3-resume-interview.md`, `docs/plans/open-questions.md`, `docs/adr.md`(ADR-013), `docs/architecture.md`, `docs/roadmap.md`, `docs/overview.md`
+- `api/parse-pdf.ts`, `package.json`, `scripts/vercel-build.sh`, `.vercelignore`, `vercel.json`
+- `supabase/migrations/20260918063747_guest_usage_rpc.sql`, `supabase/migrations/20260918064500_grant_service_role_guest_usage.sql`
+- `supabase/functions/interview-chat/` (index.ts, `_shared/llm/*`, `_shared/prompt.ts`, `_shared/rate_limit.ts`)
+- `lib/features/resume/`, `lib/features/interview/`, `lib/app/router.dart`, `lib/app/app_config.dart`, `lib/features/me/presentation/me_page.dart`
+- `.gitignore`

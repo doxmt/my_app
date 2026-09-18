@@ -10,6 +10,7 @@ import '../features/practice/presentation/question_detail_page.dart';
 import '../features/practice/presentation/question_list_page.dart';
 import '../features/practice/presentation/question_review_page.dart';
 import '../features/practice/presentation/topic_list_page.dart';
+import '../features/resume/presentation/resume_page.dart';
 import '../features/wrong_notes/presentation/wrong_notes_page.dart';
 import 'widgets/app_shell.dart';
 
@@ -106,6 +107,10 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: '/me',
                 builder: (context, state) => const MePage(),
                 routes: [
+                  GoRoute(
+                    path: 'resume',
+                    builder: (context, state) => const ResumePage(),
+                  ),
                   GoRoute(
                     path: 'wrong-notes',
                     builder: (context, state) => const WrongNotesPage(),

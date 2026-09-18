@@ -52,12 +52,12 @@ gh issue create \
 
 ## 브랜치 생성
 
-이슈 번호를 브랜치명에 포함:
+이슈 번호를 브랜치명에 포함. **브랜치명은 영문(로마자)으로 쓴다** — 한글 등 비ASCII 문자는 GitHub이 hidden character 경고를 띄운다:
 
 ```bash
-git checkout -b feat/{이슈번호}-{기능명}
-# 예: feat/1-홈화면
-# 예: fix/2-로그인오류
+git checkout -b feat/{이슈번호}-{기능명-영문}
+# 예: feat/1-home-screen
+# 예: fix/2-login-error
 ```
 
 ## 커밋 메시지

@@ -28,7 +28,7 @@
 | LLM | **Anthropic + OpenAI, 어댑터로 교체 가능** | Edge Function 안에 `LlmProvider` 인터페이스 + 두 어댑터, `LLM_PROVIDER` env var로 선택 |
 | 비회원 처리 | **로그인 없음(익명 로그인도 안 씀). 데이터는 기기에만, 한도는 기기 ID + IP** | 사용자 요청: 비회원은 바로 사용. 서버에 비회원 데이터를 두지 않아 신뢰할 수 없는 기기 ID로 조회하는 경로가 없음. 기기 ID만으로는 앱 초기화로 한도가 풀려서 IP 한도를 함께 건다 |
 | OAuth | Google, Apple, GitHub, Kakao (계정 모두 준비됨) | 구현은 M4 |
-| 이력서 추출 | 텍스트 붙여넣기 기본. PDF는 앱이 Vercel Node 함수(`pdf-parse`/`unpdf`)로 직접 보내 텍스트만 받음, 원본 저장 안 함 | Deno엔 PDF 파서가 없고, 비회원은 Storage에 올릴 수 없음 |
+| 이력서 추출 | 텍스트 붙여넣기 기본. PDF는 앱이 Vercel Node 함수(`unpdf`)로 직접 보내 텍스트만 받음, 원본 저장 안 함 | Deno엔 PDF 파서가 없고, 비회원은 Storage에 올릴 수 없음 |
 | 결제 | 미구현. `profiles.plan_tier`, `stripe_customer_id`(nullable)만 추가 | 나중에 마이그레이션 없이 붙이기 위해 |
 | 어드민 | **React 웹앱**, 별도 배포, 같은 Supabase 프로젝트 | 내부 도구라 Flutter일 필요 없음 |
 | 콘텐츠 수집 | 자료 수집 → AI 초안 → 임베딩 중복 비교 → 승인 → 게시. 어드민 버튼 또는 커맨드로 실행 | 사용자가 자동화를 원함 |
@@ -156,7 +156,7 @@ admin/            React 어드민 웹앱 (M5)
 - **M0. 정리 + 문서화** ✅ — 데스크톱 플랫폼 폴더 삭제, `CLAUDE.md`와 `docs/` 작성
 - **M1. Supabase 세팅 + 기기 ID + 내비게이션 뼈대** — `supabase init`/`link`, 스키마·RLS·GRANT 마이그레이션(pgvector 포함, 전체 12개 테이블), `supabase_flutter`/`flutter_riverpod`/`go_router` 연결, 기기 ID 생성, 하단 탭 3개(홈 `/` · 모의면접 `/interview` · 내 정보 `/me`, 오답노트는 `/me/wrong-notes`). 사용량 RPC(`increment_guest_usage`, `increment_daily_usage`)와 `rate_limit_config` 초기값은 M3·M4에서 추가. 완료 기준: 세 플랫폼에서 로그인 없이 카테고리 목록 조회
 - **M2. 카테고리/문제풀이 + 로컬 오답노트** — CS·프론트엔드 2개 분야 SQL 시드(주제 2×문제 3), 학습하기/문제풀기 2가지 모드, 로컬 오답노트 (`shared_preferences` + JSON, 답변 시도 기록 미저장). 완료 기준: 재시작 후에도 기록 유지
-- **M3. 이력서 입력 + 모의면접 (비회원)** — 텍스트/PDF(Vercel 함수) 입력, 기기 저장, `interview-chat`(어댑터 2종, 대화 길이 제한, 스트리밍), `increment_guest_usage` RPC 추가, `rate_limit_config` 초기값 삽입, 채팅 UI. 완료 기준: 로그인 없이 이력서 기반 대화, 기기·IP 한도 초과 시 429, `LLM_PROVIDER`로 전환
+- **M3. 이력서 입력 + 모의면접 (비회원)** — 텍스트/PDF(Vercel 함수) 입력, 기기 저장, `interview-chat`(어댑터 2종, 대화 길이 제한, 스트리밍), `increment_guest_usage` RPC 추가, `rate_limit_config` 초기값 삽입, 채팅 UI. 완료 기준: 로그인 없이 이력서 입력→분야 선택→메시지 전송·기기 저장까지 iOS에서 동작, 기기·IP 한도 각각 429, Anthropic/OpenAI 어댑터가 `LlmProvider`로 구현되고 `LLM_PROVIDER`로 선택되며 벤더별 파싱은 단위 테스트로 검증, 실호출 검증은 API 키 확보 후 별도 작업
 - **M4. OAuth 회원가입** — 4종 로그인, 기기 데이터 DB 업로드, `interview-chat` 회원 경로, `increment_daily_usage` RPC 추가, `free` 한도 적용. 완료 기준: 비회원 기록이 가입 후 계정에 남고 타인 데이터는 안 보임
 - **M5. 어드민 + 콘텐츠 자동화** — React 어드민(별도 배포, `is_admin`), `content-pipeline`, 후보 검토·승인 UI, 커맨드 실행 지원. 완료 기준: 중복 후보에 `duplicate_of`, 승인 문제가 앱에 바로 노출
 - **M6. 폴리시/QA** — 로딩·에러·빈 상태, 3개 플랫폼 전체 여정 점검, 플랫폼별 특이사항을 `CLAUDE.md`에 기록, 릴리즈 시 `main` push
