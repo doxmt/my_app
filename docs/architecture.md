@@ -5,11 +5,11 @@
 - **앱**: Flutter (Android / iOS / Web), Riverpod(상태관리), go_router(라우팅)
 - **백엔드**: Supabase — Postgres(+pgvector), Auth(OAuth, M4), Edge Functions(Deno)
 - **LLM**: Anthropic / OpenAI — Edge Function 내부 어댑터로 교체 가능 (`LLM_PROVIDER` env var)
-- **PDF 추출**: 별도 Vercel Node 서버리스 함수 (Deno에는 쓸 만한 PDF 파서가 없음)
+- **PDF 추출**: Vercel Node 서버리스 함수 (`unpdf` 라이브러리, `api/parse-pdf.ts`, 같은 Vercel 프로젝트에서 Flutter 웹과 함께 배포)
 - **어드민**: 별도 React 웹앱 (M5, 프레임워크 미정)
 - **배포**: 웹은 Vercel(develop → Preview, main → Production, path URL 전략 + SPA rewrite), CI는 GitHub Actions(`flutter analyze` + `flutter test`). PR에는 CI·Vercel 배포 결과를 한글 요약 댓글 하나로 갱신(`.github/scripts/pr-summary.js`, `ci.yml` + `pr-deploy.yml`의 `deployment_status`), Vercel 봇 댓글은 끔. GitHub 기본 브랜치는 `develop`
 - **화면**: 하단 탭 3개(홈 `/` · 모의면접 `/interview` · 내 정보 `/me`), `StatefulShellRoute.indexedStack`. 모바일 레이아웃 먼저, 웹 전용 레이아웃은 M6
-- **설정**: Supabase URL/publishable key는 `String.fromEnvironment`로 읽음. 로컬은 `--dart-define-from-file=env/dev.json`(gitignore), Vercel은 환경변수를 `--dart-define`으로 전달 (CI는 불필요)
+- **설정**: Supabase URL/publishable key, PDF 파싱 함수 오리진(`PDF_PARSE_BASE_URL`)은 `String.fromEnvironment`로 읽음. 로컬은 `--dart-define-from-file=env/dev.json`(gitignore), Vercel은 환경변수를 `--dart-define`으로 전달(`PDF_PARSE_BASE_URL`은 Vercel이 자동 주입하는 `$VERCEL_URL`로 배포마다 자기 자신을 가리킴) (CI는 불필요)
 - **마이그레이션**: 원격 Supabase에 `supabase db push`로 적용. 로컬 Docker는 쓰지 않음
 
 ## 디렉토리 구조
@@ -28,9 +28,10 @@ lib/
     practice/          문제풀이 흐름
     wrong_notes/       오답노트
     resume/            이력서 입력
-    interview/         모의면접 채팅
-    usage/             남은 사용량 표시
+    interview/         모의면접 채팅 (남은 사용량 배너 포함)
     auth/              OAuth 로그인 (M4에서 추가)
+
+api/                   Vercel Node 서버리스 함수 (parse-pdf.ts 등, PDF 텍스트 추출)
 
 supabase/
   migrations/          스키마, RLS, GRANT, RPC
@@ -47,7 +48,7 @@ admin/                 React 어드민 웹앱 (M5)
 - **비회원은 로그인 없음**: 비회원은 Supabase Auth 세션이 없다. 데이터(학습 기록, 이력서, 면접 대화)는 전부 기기에 저장하고, 서버에는 사용량 카운터만 남긴다. 리포지토리는 "로컬 구현"과 "Supabase 구현"을 두고 로그인 여부로 고른다.
 - **기기 ID**: 최초 실행 시 UUID를 만들어 로컬에 보관하고 Edge Function 호출 때 `X-Device-Id` 헤더로 보낸다. 서버는 이 값을 신뢰하지 않고 한도 계산 키로만 쓴다.
 - **LLM 호출은 서버에서만**: 앱은 Edge Function만 호출하고, API 키는 Supabase secrets에만 둔다.
-- **LLM 어댑터**: `LlmProvider` 인터페이스(`streamChat`) + `AnthropicProvider` / `OpenAiProvider`, `factory.ts`가 env var로 선택.
+- **LLM 어댑터**: `LlmProvider` 인터페이스(`streamChat`) + `AnthropicProvider` / `OpenAiProvider`, `factory.ts`가 env var로 선택. Flutter 클라이언트는 `interview-chat`을 `package:http`로 Function URL에 직접 POST해 스트림을 수동 파싱한다 (`supabase_flutter`의 `functions.invoke`는 스트리밍 미지원).
 - **콘텐츠 쓰기는 앱에서 불가**: `categories` / `questions`는 공개 읽기 전용. 새 문제는 어드민 승인 흐름(`question_candidates` → `questions`)으로만 들어간다. M5 이전에는 SQL 시드로 넣는다.
 - **권한은 명시적으로**: 프로젝트 설정상 새 테이블이 Data API에 자동 노출되지 않고 RLS가 자동으로 켜진다. 마이그레이션마다 `GRANT`와 RLS 정책(공개 테이블의 select 포함)을 직접 작성한다.
 
@@ -87,11 +88,11 @@ PDF → Vercel 파싱 함수로 직접 전송 → 추출된 텍스트 반환
   → 비회원: 기기에 저장 / 회원: resumes 테이블에 저장
 
 [모의면접 — 비회원]
-메시지 전송 → Edge Function interview-chat
-  (publishable key + X-Device-Id, 본문에 이력서 텍스트·카테고리·이전 대화 포함)
-  → 기기 ID·IP 해시로 increment_guest_usage (초과 시 429)
-  → 이전 대화 길이 제한 확인 → 프롬프트 구성 → LlmProvider.streamChat → 스트리밍 응답
-  → 앱이 대화를 기기에 저장 (서버에는 사용량만 남음)
+메시지 전송 → 앱이 `package:http`로 interview-chat Function URL에 직접 POST
+  (publishable key + X-Device-Id 헤더, 본문에 이력서 텍스트·카테고리·이전 대화 포함)
+  → Edge Function에서 기기 ID·IP 해시로 increment_guest_usage (초과 시 429)
+  → 이전 대화 길이 제한 확인 → 프롬프트 구성 → LlmProvider.streamChat → SSE 스트리밍 응답
+  → 앱이 응답을 청크 단위로 읽어 파싱 후 대화를 기기에 저장 (서버에는 사용량만 남음)
 
 [모의면접 — 회원, M4 이후]
 메시지 전송 (JWT) → user_id 확인 → increment_daily_usage (초과 시 429)

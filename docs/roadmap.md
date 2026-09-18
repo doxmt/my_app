@@ -33,7 +33,11 @@
 - `increment_guest_usage` RPC 추가 (기기 ID + IP 해시)
 - `rate_limit_config` 초기값 삽입 (`guest_device`, `guest_ip` 한도)
 - 채팅 UI (스트리밍 말풍선, 남은 사용량 배너, 한도 초과 안내)
-- 완료 기준: 로그인 없이 이력서 내용을 참고한 면접 대화가 되고, 기기 한도·IP 한도 초과 시 각각 429 안내가 뜸. `LLM_PROVIDER` 변경으로 제공자 전환됨
+- 완료 기준:
+  - 로그인 없이 이력서 입력(텍스트/PDF) → 분야·직무 선택 → 채팅 UI에서 메시지 전송·기기 저장까지 iOS 시뮬레이터에서 동작
+  - 기기 한도·IP 한도 초과 시 각각 429 안내
+  - Anthropic/OpenAI 어댑터가 `LlmProvider` 인터페이스로 구현되고 `factory.ts`가 `LLM_PROVIDER` 값에 따라 올바른 어댑터를 선택하며, 벤더별 요청 형식·스트리밍 이벤트 파싱은 단위 테스트로 검증됨
+  - 실제 벤더 API 호출을 통한 종단 스트리밍 검증(iOS에서 실제 LLM 응답으로 면접 대화)은 API 키 확보 후 별도 후속 작업
 
 ## M4. OAuth 회원가입
 - Supabase Auth에 Google/Apple/GitHub/Kakao 설정
