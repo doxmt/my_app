@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import '../../../app/app_config.dart';
 import '../../../core/device/device_id.dart';
 import '../../../core/storage/local_json_store.dart';
+import '../../../core/supabase/supabase_client_provider.dart';
 import '../data/http_interview_chat_client.dart';
 import '../data/local_interview_repository.dart';
 import '../domain/interview_chat_client.dart';
@@ -20,10 +21,15 @@ final interviewSessionProvider = FutureProvider<InterviewSession?>((ref) {
 
 final interviewChatClientProvider = Provider<InterviewChatClient>((ref) {
   final config = ref.watch(appConfigProvider);
-  return HttpInterviewChatClient(
+  final client = HttpInterviewChatClient(
     client: http.Client(),
     supabaseUrl: config.supabaseUrl,
     publishableKey: config.supabasePublishableKey,
     deviceIdProvider: () => ref.read(deviceIdProvider.future),
+    accessTokenProvider: () async {
+      return ref.read(supabaseClientProvider).auth.currentSession?.accessToken;
+    },
   );
+  ref.onDispose(client.close);
+  return client;
 });

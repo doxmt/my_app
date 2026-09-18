@@ -200,8 +200,8 @@ class _ChatViewState extends ConsumerState<_ChatView> {
   String _draftReply = '';
   String? _errorMessage;
   String? _pendingRetryMessage;
-  int? _deviceRemaining;
-  int? _ipRemaining;
+  UsageStatus? _usage;
+  bool _isRateLimited = false;
   String? _rateLimitBlockedBy;
 
   @override
@@ -221,10 +221,7 @@ class _ChatViewState extends ConsumerState<_ChatView> {
     try {
       final usage = await ref.read(interviewChatClientProvider).fetchUsage();
       if (mounted) {
-        setState(() {
-          _deviceRemaining = usage.deviceRemaining;
-          _ipRemaining = usage.ipRemaining;
-        });
+        setState(() => _usage = usage);
       }
     } catch (_) {
       // 배너 초기값 조회 실패는 무시한다. 메시지 전송 시 다시 갱신된다.
@@ -270,6 +267,7 @@ class _ChatViewState extends ConsumerState<_ChatView> {
       _isSending = true;
       _draftReply = '';
       _errorMessage = null;
+      _isRateLimited = false;
       _rateLimitBlockedBy = null;
       _pendingRetryMessage = null;
     });
@@ -282,12 +280,9 @@ class _ChatViewState extends ConsumerState<_ChatView> {
       resumeText: widget.resumeText,
       history: history,
       message: userMessage,
-      onUsage: (deviceRemaining, ipRemaining) {
+      onUsage: (usage) {
         if (mounted) {
-          setState(() {
-            _deviceRemaining = deviceRemaining;
-            _ipRemaining = ipRemaining;
-          });
+          setState(() => _usage = usage);
         }
       },
     );
@@ -314,9 +309,9 @@ class _ChatViewState extends ConsumerState<_ChatView> {
       setState(() {
         _isSending = false;
         _draftReply = '';
+        _isRateLimited = true;
         _rateLimitBlockedBy = error.blockedBy;
-        _deviceRemaining = error.deviceRemaining;
-        _ipRemaining = error.ipRemaining;
+        _usage = error.usage;
       });
     } on InterviewChatException catch (error) {
       if (!mounted) return;
@@ -329,9 +324,26 @@ class _ChatViewState extends ConsumerState<_ChatView> {
     }
   }
 
+  String _usageBannerText() {
+    return switch (_usage) {
+      null => '오늘 남은 면접 횟수를 확인하는 중입니다.',
+      GuestUsageStatus(:final deviceRemaining, :final ipRemaining) =>
+        '오늘 남은 면접 횟수: $deviceRemaining회 (네트워크 전체 $ipRemaining회)',
+      MemberUsageStatus(:final remaining) => '오늘 남은 면접 횟수: $remaining회',
+    };
+  }
+
+  String _rateLimitedMessage() {
+    return switch (_rateLimitBlockedBy) {
+      'device' => '오늘 이 기기에서 사용할 수 있는 면접 횟수를 모두 사용했습니다.',
+      'ip' => '현재 네트워크에서 사용할 수 있는 면접 횟수를 모두 사용했습니다.',
+      _ => '오늘 사용할 수 있는 면접 횟수를 모두 사용했습니다.',
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
-    final isBlocked = _rateLimitBlockedBy != null;
+    final isBlocked = _isRateLimited;
 
     return Column(
       children: [
@@ -341,13 +353,7 @@ class _ChatViewState extends ConsumerState<_ChatView> {
           color: Theme.of(context).colorScheme.surfaceContainerLow,
           child: Row(
             children: [
-              Expanded(
-                child: Text(
-                  _deviceRemaining == null || _ipRemaining == null
-                      ? '오늘 남은 면접 횟수를 확인하는 중입니다.'
-                      : '오늘 남은 면접 횟수: $_deviceRemaining회 (네트워크 전체 $_ipRemaining회)',
-                ),
-              ),
+              Expanded(child: Text(_usageBannerText())),
               TextButton(onPressed: _newInterview, child: const Text('새 면접 시작')),
             ],
           ),
@@ -358,9 +364,7 @@ class _ChatViewState extends ConsumerState<_ChatView> {
             padding: const EdgeInsets.all(12),
             color: Theme.of(context).colorScheme.errorContainer,
             child: Text(
-              _rateLimitBlockedBy == 'device'
-                  ? '오늘 이 기기에서 사용할 수 있는 면접 횟수를 모두 사용했습니다.'
-                  : '현재 네트워크에서 사용할 수 있는 면접 횟수를 모두 사용했습니다.',
+              _rateLimitedMessage(),
               style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer),
             ),
           ),

@@ -1,5 +1,8 @@
 {
   "SUPABASE_URL": "https://<project-ref>.supabase.co",
   "SUPABASE_PUBLISHABLE_KEY": "sb_publishable_...",
-  "PDF_PARSE_BASE_URL": "https://<vercel-project>.vercel.app"
+  "PDF_PARSE_BASE_URL": "https://<vercel-project>.vercel.app",
+  "GOOGLE_IOS_CLIENT_ID": "<google-cloud-console-ios-client-id>.apps.googleusercontent.com",
+  "GOOGLE_SERVER_CLIENT_ID": "<google-cloud-console-web-client-id>.apps.googleusercontent.com",
+  "AUTH_REDIRECT_URL": "<네이티브 OAuth 콜백 URL, 예: io.example.myapp://login-callback>"
 }

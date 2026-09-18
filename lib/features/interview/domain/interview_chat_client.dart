@@ -1,10 +1,21 @@
 import 'interview_message.dart';
 
-class UsageStatus {
-  const UsageStatus({required this.deviceRemaining, required this.ipRemaining});
+/// 남은 면접 횟수. 비회원은 기기·네트워크(IP) 두 한도, 회원은 `free` 한도 하나를 쓴다.
+sealed class UsageStatus {
+  const UsageStatus();
+}
+
+class GuestUsageStatus extends UsageStatus {
+  const GuestUsageStatus({required this.deviceRemaining, required this.ipRemaining});
 
   final int deviceRemaining;
   final int ipRemaining;
+}
+
+class MemberUsageStatus extends UsageStatus {
+  const MemberUsageStatus({required this.remaining});
+
+  final int remaining;
 }
 
 /// `interview-chat` Edge Function 호출 클라이언트 인터페이스.
@@ -19,7 +30,7 @@ abstract class InterviewChatClient {
     required String resumeText,
     required List<InterviewMessage> history,
     required String message,
-    void Function(int deviceRemaining, int ipRemaining)? onUsage,
+    void Function(UsageStatus usage)? onUsage,
   });
 }
 
@@ -30,19 +41,24 @@ sealed class InterviewChatException implements Exception {
 }
 
 class InterviewRateLimitedException extends InterviewChatException {
-  const InterviewRateLimitedException({
+  InterviewRateLimitedException.guest({
     required this.blockedBy,
-    required this.deviceRemaining,
-    required this.ipRemaining,
-  }) : super(
+    required int deviceRemaining,
+    required int ipRemaining,
+  }) : usage = GuestUsageStatus(deviceRemaining: deviceRemaining, ipRemaining: ipRemaining),
+       super(
          blockedBy == 'device'
              ? '오늘 이 기기에서 사용할 수 있는 면접 횟수를 모두 사용했습니다.'
              : '현재 네트워크에서 사용할 수 있는 면접 횟수를 모두 사용했습니다.',
        );
 
+  InterviewRateLimitedException.member({required int remaining})
+    : blockedBy = null,
+      usage = MemberUsageStatus(remaining: remaining),
+      super('오늘 사용할 수 있는 면접 횟수를 모두 사용했습니다.');
+
   final String? blockedBy;
-  final int deviceRemaining;
-  final int ipRemaining;
+  final UsageStatus usage;
 }
 
 class InterviewUpstreamException extends InterviewChatException {

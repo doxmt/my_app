@@ -129,3 +129,13 @@
 이유: 별도 Vercel 프로젝트를 만들면 도메인·CI·배포 파이프라인을 따로 관리해야 하는 부담이 크다. `unpdf`는 canvas 의존성이 없어 서버리스 환경에서 안정적이다. `functions.invoke`는 라이브러리 설계상 스트리밍 응답을 지원하지 않는다(Promise 기반 단건 응답만 처리). mock 어댑터를 제품 코드에 추가하면 검증용 분기가 제품에 남고, 실제 벤더 동작과의 괴리 위험이 있다.
 대안: PDF 함수를 별도 Vercel 프로젝트로 분리, `functions.invoke` 폴링으로 스트리밍 우회, Anthropic/OpenAI 어댑터와 함께 mock 어댑터를 `LlmProvider` 구현으로 추가.
 트레이드오프: 레포 루트에 Node `package.json`이 생겨 Flutter 전용이던 루트가 다중 런타임이 된다(첫 배포에서 Flutter web 빌드 회귀 확인 필요). Flutter 클라이언트가 인증 헤더를 수동으로 구성해야 한다(`functions.invoke`가 주던 편의 상실). M3 완료 시점에는 실제 LLM 응답 기반의 스트리밍 종단 검증이 빠진다(API 키 확보 전까지 실사용성 미확인).
+
+---
+
+## ADR-014: M4 — OAuth 제공자 범위, 데이터 이전 대상, 플랫폼별 로그인 방식
+
+**날짜:** 2026-09-18
+결정: (1) M4에서 Supabase Auth의 OAuth 제공자는 **Google + GitHub만** 지원한다. Apple은 Apple Developer Program 유료 가입($99/년)이 필요해 제외하고, Kakao는 Supabase 기본 지원이 확인됐으나(Kakao Developers 콘솔 등록 + Consent Items 설정 필요) 범위 조정 차원에서 M4 이후 후속 작업으로 미룬다. (2) 회원가입 시 로컬에서 DB로 이전하는 데이터는 **오답노트 + 이력서만**이다. 면접 대화(`interview_sessions`, `interview_messages`)는 이전하지 않는다. 이전 정책: 오답노트는 `unique(user_id, question_id)` 기준으로 서버와 로컬의 중복을 무시하고 병합, 이력서는 서버에 이미 있으면 로컬을 올리지 않음(서버 우선), 성공한 항목만 로컬에서 삭제하고 실패 시 로컬을 보존해 재시도 가능하게 한다. (3) Google 로그인은 플랫폼별로 구분한다 — Android/iOS는 네이티브 `google_sign_in` 7.x(싱글턴 `GoogleSignIn.instance` + `initialize()`)로 ID 토큰을 얻어 `signInWithIdToken()`을 호출하고, Web은 `signInWithOAuth()` 리다이렉트를 쓴다. GitHub는 네이티브 SDK가 없어 전 플랫폼에서 `signInWithOAuth()` 리다이렉트로 통일한다.
+이유: (1) Apple의 개발자 계정 비용은 선행 부담이고 Kakao는 이미 Supabase 지원이 확인되어 M4 범위를 먼저 Google/GitHub로 한정해 빠르게 검증한다. (2) 면접 대화는 비회원 때 사용한 임시 정보로 재현 가치가 낮고, 이전 작업(두 테이블 쓰기 + 메시지 순서·역할 매핑 검증)이 크다. 대신 이력서와 오답노트는 학습 기록의 핵심이라 반드시 이전한다. (3) Google 네이티브 SDK는 지원하는 플랫폼에서 UX가 낫고(싱글 탭 로그인, 계정 선택 UI 등), GitHub는 애초에 네이티브 SDK가 없어 웹뷰 리다이렉트만 가능하다. 네이티브/웹 섞기보다 각 제공자별로 최적 방식을 고른다.
+대안: (1) Apple을 M4에 포함하기(비용 선처리), Kakao를 포함하기. (2) 면접 대화까지 이전하기. (3) Google을 전 플랫폼에서 리다이렉트로 통일하기(구현 단순, UX 하락).
+트레이드오프: (1) Apple/Kakao 없이 출시하면 출시 후 사용자 요청에 따라 급하게 추가해야 할 수 있다(특히 Apple은 iOS 앱스토어에서 소셜 로그인을 제공하면 Apple 로그인도 지원해야 한다는 정책이 있을 수 있음). (2) 면접 대화를 이전하지 않으면 비회원 때 쌓은 대화가 계정 전환 후 사라진다. (3) Google을 리다이렉트로 통일하면 모바일에서 여러 창이 오가며 UX가 저하된다.

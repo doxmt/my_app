@@ -32,6 +32,20 @@ export async function fetchRateLimitConfig(client: SupabaseClientLike): Promise<
   return { guestDeviceLimit, guestIpLimit };
 }
 
+export async function fetchMemberLimit(client: SupabaseClientLike): Promise<number> {
+  const { data, error } = await client
+    .from('rate_limit_config')
+    .select('daily_interview_messages')
+    .eq('tier', 'free')
+    .single();
+
+  if (error) {
+    throw new Error(`한도 설정 조회 실패: ${error.message}`);
+  }
+
+  return (data as { daily_interview_messages: number }).daily_interview_messages;
+}
+
 /** salt와 함께 해시해 원본 기기 ID/IP가 DB에 그대로 남지 않게 한다. */
 export async function hashSubjectKey(rawValue: string, salt: string): Promise<string> {
   const data = new TextEncoder().encode(`${salt}:${rawValue}`);

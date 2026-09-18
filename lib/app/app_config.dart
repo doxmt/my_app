@@ -10,6 +10,9 @@ class AppConfig {
     required this.supabaseUrl,
     required this.supabasePublishableKey,
     required this.pdfParseBaseUrl,
+    required this.googleIosClientId,
+    required this.googleServerClientId,
+    required this.authRedirectUrl,
   });
 
   final String supabaseUrl;
@@ -18,13 +21,26 @@ class AppConfig {
   /// PDF 텍스트 추출 Vercel 함수가 배포된 오리진 (예: `https://my-app.vercel.app`).
   final String pdfParseBaseUrl;
 
+  /// Google Cloud Console의 iOS OAuth 클라이언트 ID. `google_sign_in` 네이티브 로그인(Android/iOS)에 쓴다.
+  final String googleIosClientId;
+
+  /// Google Cloud Console의 Web OAuth 클라이언트 ID(serverClientId). ID 토큰 발급에 필요하다.
+  final String googleServerClientId;
+
+  /// 네이티브(Android/iOS) `signInWithOAuth` 딥링크 콜백 URL. Web에서는 쓰지 않는다.
+  final String authRedirectUrl;
+
   /// 컴파일 타임 환경 변수에서 설정 값을 읽는다.
   ///
   /// 필요한 값 중 하나라도 비어 있으면 어떤 값이 빠졌는지 알려주는 [StateError]를 던진다.
+  /// Google/GitHub OAuth 설정 값은 아직 외부 콘솔 등록이 끝나지 않아도 앱이 뜰 수 있도록 선택값으로 둔다.
   factory AppConfig.fromEnvironment() {
     const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
     const supabasePublishableKey = String.fromEnvironment('SUPABASE_PUBLISHABLE_KEY');
     const pdfParseBaseUrl = String.fromEnvironment('PDF_PARSE_BASE_URL');
+    const googleIosClientId = String.fromEnvironment('GOOGLE_IOS_CLIENT_ID');
+    const googleServerClientId = String.fromEnvironment('GOOGLE_SERVER_CLIENT_ID');
+    const authRedirectUrl = String.fromEnvironment('AUTH_REDIRECT_URL');
 
     final missing = <String>[
       if (supabaseUrl.isEmpty) 'SUPABASE_URL',
@@ -43,6 +59,9 @@ class AppConfig {
       supabaseUrl: supabaseUrl,
       supabasePublishableKey: supabasePublishableKey,
       pdfParseBaseUrl: pdfParseBaseUrl,
+      googleIosClientId: googleIosClientId,
+      googleServerClientId: googleServerClientId,
+      authRedirectUrl: authRedirectUrl,
     );
   }
 }
