@@ -97,8 +97,10 @@ rate_limit_config(tier PK ['guest_device'|'guest_ip'|'free'|'paid'], daily_inter
 
 **1) 카테고리 문제풀이 + 오답노트**
 - `categories`/`questions`는 로그인 없이 조회
-- 비회원: 답변·자가채점·오답노트 전부 기기 로컬 저장
+- 비회원: 학습하기(모범답안 읽기 전용) 또는 문제풀기(답변 작성 → 채점) 중 선택
+- 문제풀기 시 답변·자가채점·오답노트는 기기 로컬 저장 (`shared_preferences` + JSON)
 - 오답노트 저장은 사용자가 누르는 버튼 (맞힌 문제도 저장 가능)
+- 답변 시도 기록(연습 이력)은 저장하지 않음
 
 **2) 이력서 입력**
 - 텍스트 붙여넣기 → 그대로 사용
@@ -124,10 +126,15 @@ lib/
   core/
     supabase/     Supabase 클라이언트 provider
     device/       device_id.dart (최초 실행 시 UUID 생성·보관)
-    storage/      비회원 로컬 저장 (학습 기록, 이력서, 면접 대화)
+    storage/      비회원 로컬 저장 (오답노트, 이력서, 면접 대화)
     error/        Result/Failure 타입
   features/
-    categories/  practice/  wrong_notes/  resume/  interview/  usage/
+    categories/   카테고리 탐색
+    practice/     문제풀이 흐름 (학습하기·문제풀기 모드)
+    wrong_notes/  오답노트
+    resume/       이력서 입력
+    interview/    모의면접 채팅
+    usage/        사용량 표시
     auth/         (M4) OAuth 로그인
 
 supabase/
@@ -148,7 +155,7 @@ admin/            React 어드민 웹앱 (M5)
 
 - **M0. 정리 + 문서화** ✅ — 데스크톱 플랫폼 폴더 삭제, `CLAUDE.md`와 `docs/` 작성
 - **M1. Supabase 세팅 + 기기 ID + 내비게이션 뼈대** — `supabase init`/`link`, 스키마·RLS·GRANT 마이그레이션(pgvector 포함, 전체 12개 테이블), `supabase_flutter`/`flutter_riverpod`/`go_router` 연결, 기기 ID 생성, 하단 탭 3개(홈 `/` · 모의면접 `/interview` · 내 정보 `/me`, 오답노트는 `/me/wrong-notes`). 사용량 RPC(`increment_guest_usage`, `increment_daily_usage`)와 `rate_limit_config` 초기값은 M3·M4에서 추가. 완료 기준: 세 플랫폼에서 로그인 없이 카테고리 목록 조회
-- **M2. 카테고리/문제풀이 + 로컬 오답노트** — SQL 시드로 테스트 문제 삽입, 문제풀이 흐름, 로컬 오답노트. 완료 기준: 재시작 후에도 기록 유지
+- **M2. 카테고리/문제풀이 + 로컬 오답노트** — CS·프론트엔드 2개 분야 SQL 시드(주제 2×문제 3), 학습하기/문제풀기 2가지 모드, 로컬 오답노트 (`shared_preferences` + JSON, 답변 시도 기록 미저장). 완료 기준: 재시작 후에도 기록 유지
 - **M3. 이력서 입력 + 모의면접 (비회원)** — 텍스트/PDF(Vercel 함수) 입력, 기기 저장, `interview-chat`(어댑터 2종, 대화 길이 제한, 스트리밍), `increment_guest_usage` RPC 추가, `rate_limit_config` 초기값 삽입, 채팅 UI. 완료 기준: 로그인 없이 이력서 기반 대화, 기기·IP 한도 초과 시 429, `LLM_PROVIDER`로 전환
 - **M4. OAuth 회원가입** — 4종 로그인, 기기 데이터 DB 업로드, `interview-chat` 회원 경로, `increment_daily_usage` RPC 추가, `free` 한도 적용. 완료 기준: 비회원 기록이 가입 후 계정에 남고 타인 데이터는 안 보임
 - **M5. 어드민 + 콘텐츠 자동화** — React 어드민(별도 배포, `is_admin`), `content-pipeline`, 후보 검토·승인 UI, 커맨드 실행 지원. 완료 기준: 중복 후보에 `duplicate_of`, 승인 문제가 앱에 바로 노출
@@ -157,13 +164,17 @@ admin/            React 어드민 웹앱 (M5)
 ## 보류된 결정
 
 - 일일 한도 숫자 (`guest_device`, `guest_ip`, `free`) — `rate_limit_config`로 언제든 조정
-- 카테고리 목록 — M2 시드 작성 시
+- 카테고리 목록 — M2에서 CS·프론트엔드로 정함. 나머지 분야(백엔드/AI/모바일/DevOps)는 M2 이후 추가
+- 오답노트 "해결 처리" 항목을 목록에서 숨길지, 필터 토글로 볼 수 있게 할지 — M2 구현 중
+- 로컬 저장 JSON의 스키마 버전을 어떻게 올릴지 (M4 업로드 시 옛 형식 파싱 대비) — M2 구현 중
+- 카테고리 계층을 분야→주제 2단계로 고정할지 (`parent_id`는 임의 깊이 허용하나 화면은 2단계만 가정) — M2 구현 중
 - 면접 세션 종료/턴 제한, 비회원 대화 이력 최대 길이 — M3 구현 중
 - PDF 파싱 라이브러리(`pdf-parse` vs `unpdf`), 파싱 함수 호출 제한 방식 — M3 시작 시
 - 자료 수집 소스(수동 입력 vs 자동 수집) — M5 시작 시, 우선 수동 입력
 - 어드민 프레임워크(Next.js vs Vite+React) — M5 시작 시
 - 중복 판정 임계값, 임베딩 모델 — M5 구현 중
 - 디자인 방향 — 당분간 Material 3 기본 + 시드 색상 하나, 라이트/다크 모두 지원. 본격 디자인은 M2 이후에 정한다.
+- 학습 통계/학습 기록 화면이 필요해지는 시점 — M2에서 답변 기록을 미저장으로 결정했으므로 향후 기능 추가 시 정한다.
 
 ## Verification
 

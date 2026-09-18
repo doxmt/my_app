@@ -33,3 +33,23 @@
 - `.github/workflows/ci.yml`, `.github/workflows/pr-deploy.yml`, `.github/scripts/pr-summary.js`
 - `.claude/settings.json`, `.claude/skills/github/SKILL.md`, `.claude/commands/wrap.md`, `CLAUDE.md`
 - `docs/plans/m1-supabase-skeleton.md`, `docs/plans/open-questions.md`, `docs/adr.md`, `docs/architecture.md`, `docs/overview.md`, `docs/prd.md`, `docs/roadmap.md`
+
+## 2026-09-18
+- `/plan`: M2(카테고리/문제풀이 + 로컬 오답노트) 인터뷰 → 1차 초안 → explore/document-specialist/writer 조사 → 최종 계획(`docs/plans/m2-practice-wrong-notes.md`) 작성
+- 인터뷰로 확정: 학습하기+문제풀기 2갈래, CS·프론트엔드 2개 분야만 시드(주제2×문제3, 서술형만), 로컬 저장은 `SharedPreferencesAsync`+JSON, 답변 시도 기록은 저장 안 함(ADR-012)
+- `prd.md`/`roadmap.md`/`overview.md`/`architecture.md`/`adr.md`/`open-questions.md` 갱신
+- `/start`: 이슈 #6 생성, 브랜치 `feat/6-m2-practice-wrong-notes` 생성
+- executor로 M2 구현: 시드 마이그레이션 적용, `features/practice`(학습하기/문제풀기 통합) + `features/wrong_notes` + `core/storage` 신규, 라우팅에 드릴다운 4단계(`context.push()`) 추가
+- 구현 중 발견: postgrest Dart 클라이언트 `.order()`의 `ascending` 기본값이 `false`(SQL과 반대) — 기존 M1 코드(`SupabaseCategoryRepository`) 포함해 수정
+- 검증: `flutter analyze` 무경고, `flutter test` 21개 통과, Chrome에서 전체 여정(문제풀이→오답노트 저장→재시작 후 유지→딥링크) 확인
+- iOS 시뮬레이터(iPhone 17 Pro)에서 홈 화면·하단 탭까지 확인, 드릴다운 화면은 세션 종료로 미확인
+- `/submit`: 커밋, 푸시, PR #7 생성 (`Closes #6`)
+- 사용자 피드백: 홈의 분야 목록을 카드형(아이콘/이미지 포함)으로 바꾸고 싶다는 요청 — 아직 미반영, 처리 시점 미정
+
+### 주요 변경 파일
+- `supabase/migrations/20260918051938_seed_m2_content.sql`
+- `lib/features/practice/` (신규 전체)
+- `lib/features/wrong_notes/` (domain/data/presentation 신규·보강)
+- `lib/core/storage/local_json_store.dart`
+- `lib/app/router.dart`, `lib/features/categories/`
+- `docs/plans/m2-practice-wrong-notes.md`

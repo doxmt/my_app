@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'categories_providers.dart';
 
 /// 홈 탭 본문. 최상위 분야 목록을 보여준다.
-///
-/// 분야를 눌렀을 때의 이동은 M2에서 붙인다.
 class CategoriesPage extends ConsumerWidget {
   const CategoriesPage({super.key});
 
@@ -38,7 +37,11 @@ class CategoriesPage extends ConsumerWidget {
             itemCount: categories.length,
             itemBuilder: (context, index) {
               final category = categories[index];
-              return ListTile(title: Text(category.name));
+              return ListTile(
+                title: Text(category.name),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => context.push('/categories/${category.slug}'),
+              );
             },
           );
         },
