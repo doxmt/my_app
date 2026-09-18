@@ -21,7 +21,7 @@ lib/
   core/
     supabase/          Supabase 클라이언트 provider
     device/            device_id.dart (최초 실행 시 UUID 생성·보관)
-    storage/           비회원 로컬 저장 (학습 기록, 이력서, 면접 대화)
+    storage/           비회원 로컬 저장 (오답노트, 이력서, 면접 대화)
     error/             Result / Failure 타입
   features/
     categories/        카테고리 탐색

@@ -4,6 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:my_app/features/categories/domain/category.dart';
 import 'package:my_app/features/categories/domain/category_repository.dart';
 import 'package:my_app/features/categories/presentation/categories_providers.dart';
+import 'package:my_app/features/wrong_notes/domain/wrong_note.dart';
+import 'package:my_app/features/wrong_notes/domain/wrong_note_repository.dart';
+import 'package:my_app/features/wrong_notes/presentation/wrong_notes_providers.dart';
 import 'package:my_app/main.dart';
 
 class FakeCategoryRepository implements CategoryRepository {
@@ -19,6 +22,43 @@ class FakeCategoryRepository implements CategoryRepository {
     }
     return _categories;
   }
+
+  @override
+  Future<List<Category>> fetchChildCategories(String parentId) async {
+    if (throwError) {
+      throw Exception('network error');
+    }
+    return _categories.where((category) => category.parentId == parentId).toList();
+  }
+
+  @override
+  Future<Category> fetchCategoryBySlug(String slug) async {
+    if (throwError) {
+      throw Exception('network error');
+    }
+    return _categories.firstWhere((category) => category.slug == slug);
+  }
+}
+
+class FakeWrongNoteRepository implements WrongNoteRepository {
+  final List<WrongNote> _notes = [];
+
+  @override
+  Future<List<WrongNote>> fetchAll() async => _notes;
+
+  @override
+  Future<void> save(WrongNote note) async {
+    _notes.removeWhere((existing) => existing.questionId == note.questionId);
+    _notes.add(note);
+  }
+
+  @override
+  Future<void> setResolved(String questionId, bool isResolved) async {}
+
+  @override
+  Future<void> delete(String questionId) async {
+    _notes.removeWhere((note) => note.questionId == questionId);
+  }
 }
 
 const _cs = Category(
@@ -32,7 +72,10 @@ const _cs = Category(
 
 Widget _appWith(CategoryRepository repository) {
   return ProviderScope(
-    overrides: [categoryRepositoryProvider.overrideWithValue(repository)],
+    overrides: [
+      categoryRepositoryProvider.overrideWithValue(repository),
+      wrongNoteRepositoryProvider.overrideWithValue(FakeWrongNoteRepository()),
+    ],
     child: const MyApp(),
   );
 }
@@ -91,11 +134,11 @@ void main() {
 
     await tester.tap(find.text('오답노트'));
     await tester.pumpAndSettle();
-    expect(find.text('오답노트 기능은 준비 중입니다.'), findsOneWidget);
+    expect(find.text('아직 저장된 오답노트가 없습니다.'), findsOneWidget);
 
     await tester.tap(find.byType(BackButton));
     await tester.pumpAndSettle();
-    expect(find.text('오답노트 기능은 준비 중입니다.'), findsNothing);
+    expect(find.text('아직 저장된 오답노트가 없습니다.'), findsNothing);
     expect(find.text('내 정보'), findsWidgets);
   });
 }
