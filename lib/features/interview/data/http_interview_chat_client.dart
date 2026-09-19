@@ -15,23 +15,41 @@ class HttpInterviewChatClient implements InterviewChatClient {
     required String supabaseUrl,
     required String publishableKey,
     required Future<String> Function() deviceIdProvider,
+    required Future<String?> Function() accessTokenProvider,
   }) : _client = client,
        _endpoint = Uri.parse('$supabaseUrl/functions/v1/interview-chat'),
        _publishableKey = publishableKey,
-       _deviceIdProvider = deviceIdProvider;
+       _deviceIdProvider = deviceIdProvider,
+       _accessTokenProvider = accessTokenProvider;
 
   final http.Client _client;
   final Uri _endpoint;
   final String _publishableKey;
   final Future<String> Function() _deviceIdProvider;
 
+  /// 로그인 상태면 회원 액세스 토큰, 아니면 null. 세션을 watch하지 않고 요청 시점에 읽는다.
+  final Future<String?> Function() _accessTokenProvider;
+
+  void close() => _client.close();
+
   Future<Map<String, String>> _authHeaders() async {
     final deviceId = await _deviceIdProvider();
+    final accessToken = await _accessTokenProvider();
     return {
       'apikey': _publishableKey,
-      'Authorization': 'Bearer $_publishableKey',
+      'Authorization': 'Bearer ${accessToken ?? _publishableKey}',
       'X-Device-Id': deviceId,
     };
+  }
+
+  UsageStatus _parseUsage(Map<String, dynamic> json) {
+    if (json.containsKey('tier')) {
+      return MemberUsageStatus(remaining: json['remaining'] as int? ?? 0);
+    }
+    return GuestUsageStatus(
+      deviceRemaining: json['deviceRemaining'] as int? ?? 0,
+      ipRemaining: json['ipRemaining'] as int? ?? 0,
+    );
   }
 
   @override
@@ -47,11 +65,7 @@ class HttpInterviewChatClient implements InterviewChatClient {
       throw const InterviewUpstreamException();
     }
 
-    final json = jsonDecode(response.body) as Map<String, dynamic>;
-    return UsageStatus(
-      deviceRemaining: json['deviceRemaining'] as int? ?? 0,
-      ipRemaining: json['ipRemaining'] as int? ?? 0,
-    );
+    return _parseUsage(jsonDecode(response.body) as Map<String, dynamic>);
   }
 
   @override
@@ -61,7 +75,7 @@ class HttpInterviewChatClient implements InterviewChatClient {
     required String resumeText,
     required List<InterviewMessage> history,
     required String message,
-    void Function(int deviceRemaining, int ipRemaining)? onUsage,
+    void Function(UsageStatus usage)? onUsage,
   }) async* {
     final request = http.Request('POST', _endpoint)
       ..headers.addAll(await _authHeaders())
@@ -86,7 +100,10 @@ class HttpInterviewChatClient implements InterviewChatClient {
     if (response.statusCode == 429) {
       final body = await response.stream.bytesToString();
       final json = jsonDecode(body) as Map<String, dynamic>;
-      throw InterviewRateLimitedException(
+      if (json.containsKey('tier')) {
+        throw InterviewRateLimitedException.member(remaining: json['remaining'] as int? ?? 0);
+      }
+      throw InterviewRateLimitedException.guest(
         blockedBy: json['blockedBy'] as String?,
         deviceRemaining: json['deviceRemaining'] as int? ?? 0,
         ipRemaining: json['ipRemaining'] as int? ?? 0,
@@ -116,11 +133,7 @@ class HttpInterviewChatClient implements InterviewChatClient {
         final data = parsed.$2;
         switch (event) {
           case 'usage':
-            final json = jsonDecode(data) as Map<String, dynamic>;
-            onUsage?.call(
-              json['deviceRemaining'] as int? ?? 0,
-              json['ipRemaining'] as int? ?? 0,
-            );
+            onUsage?.call(_parseUsage(jsonDecode(data) as Map<String, dynamic>));
           case 'delta':
             final json = jsonDecode(data) as Map<String, dynamic>;
             final text = json['text'] as String?;

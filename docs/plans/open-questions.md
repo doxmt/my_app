@@ -36,3 +36,15 @@
 - [ ] PDF가 Vercel 요청 본문 한도 4.5MB를 넘을 가능성 — 넘으면 Blob 업로드 경유 등 별도 처리가 필요한데 이번 마일스톤에 포함할지
 - [ ] 루트에 npm 의존성용 `package.json`을 추가했을 때 Vercel이 `api/parse-pdf.ts`를 실제로 인식·빌드하는지 — 공식 문서로 확인 못함, M3 1단계 첫 배포로 직접 확인해야 함
 - [ ] (M1 이월) `profiles` 자동 생성 트리거 시점 — M3는 비회원 전용이라 직접 영향 없음, M4에서 처리 가능
+
+## M4 OAuth 회원가입 - 2026-09-18
+
+- [ ] `free` 일일 한도 숫자 결정 — 임시값으로 진행할지 (M3 guest_device=10 기준으로 몇 배 설정), 출시 전 확정 필요
+- [ ] Vercel 팀/계정 슬러그 확인 — Preview URL glob 패턴(예: `https://*-<slug>.vercel.app/**`) 등록용
+- [ ] `profiles` 자동 생성을 DB 트리거로 할지 앱에서 upsert로 할지 확정 (M1부터 이월된 항목)
+- [ ] 로그아웃 후 로컬 데이터 처리 방식 — 데이터 이전 후 로컬이 비게 되는데 의도한 동작인지
+- [ ] 가입 시 비회원 때의 면접 대화가 사라진다는 점을 사용자에게 안내할지 여부
+- [ ] `google_sign_in` 7.x 실제 API 재확인 필요 — Supabase 공식 문서가 7.x 출시 후 한동안 outdated였다는 신고 존재(GitHub 이슈 supabase/supabase#36775 Open 상태), 구현 직전 pub.dev README/example과 재대조 필수
+- [ ] 회원 남은 사용량 조회 경로 — 클라이언트가 `daily_usage` 직접 select할지, Edge Function 응답 바디로 내려줄지 (비회원 현재 방식 확인 후 맞춰야 함)
+- [ ] LLM API 키 확보 시점 — M3 어댑터 실호출 스모크 + iOS 종단 스트리밍 + M4 회원 경로 종단 검증을 키 확보 시 한 작업으로 묶을지
+- [ ] Apple/Kakao 제공자 추가 시점 — Apple은 앱스토어 출시 전 사실상 필수(Apple 로그인 정책 확인 필요), 출시 전 별도 작업으로 뺄지

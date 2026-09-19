@@ -74,3 +74,20 @@
 - `supabase/functions/interview-chat/` (index.ts, `_shared/llm/*`, `_shared/prompt.ts`, `_shared/rate_limit.ts`)
 - `lib/features/resume/`, `lib/features/interview/`, `lib/app/router.dart`, `lib/app/app_config.dart`, `lib/features/me/presentation/me_page.dart`
 - `.gitignore`
+
+## 2026-09-18
+- `/plan`으로 M4(OAuth 회원가입) 계획 수립 — 인터뷰로 범위를 Google+GitHub(Apple/Kakao 제외), 오답노트+이력서만 이전(면접 대화 제외)으로 확정
+- document-specialist 조사: Supabase의 Kakao 기본 지원 확인, `google_sign_in` 7.x breaking change, Supabase Redirect URL glob 패턴(Vercel Preview 대응)
+- writer가 `docs/architecture.md`/`docs/roadmap.md`/`docs/adr.md`(ADR-014)/`docs/plans/open-questions.md` 갱신, `docs/plans/m4-oauth-signup.md` 작성
+- `/start`로 이슈 #11 생성, 브랜치 `feat/11-oauth-signup` 생성
+- explore(Flutter/Supabase 구조 조사) + architect(profiles 트리거·데이터 이전 위치·리포지토리 분기 설계 검토) 호출 — 계획에 없던 스키마 불일치(오답노트 로컬 모델이 DB 컬럼과 불일치, `Resume.sourceType`이 DB check 제약 위반, `resumes` 테이블에 `user_id` unique 없음) 발견 및 보완 지침 확정
+- executor가 M4 1~5단계 전부 구현: `profiles` 자동 생성 트리거 + `increment_daily_usage` RPC + `free=12`/`guest_device=3` 한도 + `wrong_notes.resolved_at` 컬럼, Google(네이티브+웹 분기)/GitHub(리다이렉트) 로그인 화면, 리포지토리 회원 분기, 로그인 시 로컬 데이터(오답노트+이력서) 자동 이전, `interview-chat` 회원 경로(JWT 검증)
+- `flutter analyze` 0 issues / `flutter test` 45 passed / `deno test` 14 passed, 원격 마이그레이션 적용 및 curl 종단 검증(429/DB 저장/비회원 회귀 없음) 완료 — 직접 검증함
+- `/submit`으로 커밋(`605cb62`) 후 PR #12 생성 (`feat/11-oauth-signup` → `develop`, `Closes #11`)
+
+### 주요 변경 파일
+- `docs/plans/m4-oauth-signup.md`, `docs/adr.md`, `docs/architecture.md`, `docs/roadmap.md`, `docs/plans/open-questions.md`
+- `supabase/migrations/20260918070000_m4_profiles_trigger_and_member_usage.sql`, `20260918080000_grant_service_role_member_interview.sql`, `20260918081500_grant_service_role_interview_messages_select.sql`
+- `lib/features/auth/**` (신규)
+- `lib/features/wrong_notes/data/supabase_wrong_note_repository.dart`, `lib/features/resume/data/supabase_resume_repository.dart` (신규)
+- `supabase/functions/interview-chat/index.ts`, `_shared/member_auth.ts`(신규), `_shared/rate_limit.ts`

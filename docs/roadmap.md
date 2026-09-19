@@ -40,13 +40,14 @@
   - 실제 벤더 API 호출을 통한 종단 스트리밍 검증(iOS에서 실제 LLM 응답으로 면접 대화)은 API 키 확보 후 별도 후속 작업
 
 ## M4. OAuth 회원가입
-- Supabase Auth에 Google/Apple/GitHub/Kakao 설정
-- 로그인 화면 (`google_sign_in`, `sign_in_with_apple`, GitHub/Kakao는 `signInWithOAuth`)
-- 기기의 학습 기록·오답노트·이력서·면접 대화 → DB 업로드 (중복 방지), 이후 회원 데이터는 DB 기준
+- Supabase Auth에 **Google / GitHub** 설정 (Apple/Kakao는 M4 이후 후속 작업)
+- 로그인 화면 — Google: Android/iOS는 네이티브 `google_sign_in` + `signInWithIdToken()`, Web은 `signInWithOAuth()` 리다이렉트 / GitHub: 전 플랫폼 `signInWithOAuth()` 리다이렉트
+- 기기의 **오답노트·이력서만 DB로 업로드** (자동, 확인 화면 없음) — 면접 대화는 제외 (재현 가치 대비 작업량 크다)
+- 업로드 정책: 오답노트는 `unique(user_id, question_id)` 기준 중복 무시 병합, 이력서는 서버 우선(기존이면 업로드 안 함), 성공한 항목만 로컬 삭제(실패 시 로컬 보존 후 재시도 가능)
 - `increment_daily_usage` RPC 추가 (M3의 `increment_guest_usage`와 별개)
 - `interview-chat`에 회원 경로 추가 (JWT, `increment_daily_usage`, DB 이력 사용, `interview_messages` 저장)
 - 회원은 `free` 한도 적용
-- 완료 기준: 비회원 때 쌓은 기록이 가입 후 계정에 남아 있고, 다른 계정 데이터는 보이지 않음
+- 완료 기준: 비회원 때 쌓은 오답노트·이력서가 가입 후 계정에 남아 있고, 다른 계정 데이터는 보이지 않음
 
 ## M5. 어드민 페이지 + 콘텐츠 자동화
 - React 어드민 웹앱 (`admin/`), 별도 Vercel 배포, `is_admin` 확인

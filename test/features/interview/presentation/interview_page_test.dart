@@ -48,12 +48,14 @@ class FakeInterviewRepository implements InterviewRepository {
 
 /// 실제 네트워크 없이 토막 문자열을 순차 emit하는 스텁.
 class StubInterviewChatClient implements InterviewChatClient {
+  StubInterviewChatClient({UsageStatus? initialUsage})
+    : _initialUsage = initialUsage ?? const GuestUsageStatus(deviceRemaining: 9, ipRemaining: 39);
+
   final controller = StreamController<String>();
+  final UsageStatus _initialUsage;
 
   @override
-  Future<UsageStatus> fetchUsage() async {
-    return const UsageStatus(deviceRemaining: 9, ipRemaining: 39);
-  }
+  Future<UsageStatus> fetchUsage() async => _initialUsage;
 
   @override
   Stream<String> streamReply({
@@ -62,9 +64,9 @@ class StubInterviewChatClient implements InterviewChatClient {
     required String resumeText,
     required List<InterviewMessage> history,
     required String message,
-    void Function(int deviceRemaining, int ipRemaining)? onUsage,
+    void Function(UsageStatus usage)? onUsage,
   }) {
-    onUsage?.call(8, 38);
+    onUsage?.call(const GuestUsageStatus(deviceRemaining: 8, ipRemaining: 38));
     return controller.stream;
   }
 }
@@ -120,5 +122,27 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('안녕하세요'), findsOneWidget);
+  });
+
+  testWidgets('회원이면 free 한도 기준 남은 횟수 배너를 보여준다', (tester) async {
+    final session = const InterviewSession(
+      categorySlug: 'cs',
+      categoryName: 'CS',
+      jobTitle: '백엔드 개발자',
+      messages: [],
+    );
+    final chatClient = StubInterviewChatClient(
+      initialUsage: const MemberUsageStatus(remaining: 5),
+    );
+
+    await tester.pumpWidget(
+      _pageWith(
+        interviewRepository: FakeInterviewRepository(session),
+        chatClient: chatClient,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('오늘 남은 면접 횟수: 5회'), findsOneWidget);
   });
 }

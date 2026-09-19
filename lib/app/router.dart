@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/auth/presentation/login_page.dart';
 import '../features/categories/presentation/categories_page.dart';
 import '../features/interview/presentation/interview_page.dart';
 import '../features/me/presentation/me_page.dart';
@@ -107,6 +108,10 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: '/me',
                 builder: (context, state) => const MePage(),
                 routes: [
+                  GoRoute(
+                    path: 'login',
+                    builder: (context, state) => const LoginPage(),
+                  ),
                   GoRoute(
                     path: 'resume',
                     builder: (context, state) => const ResumePage(),
