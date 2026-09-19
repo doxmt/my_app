@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -7,6 +8,7 @@ import { useAuth } from '@/auth/AuthContext'
 
 export function LoginPage() {
   const { login } = useAuth()
+  const navigate = useNavigate()
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -19,6 +21,8 @@ export function LoginPage() {
     setSubmitting(false)
     if (result) {
       setError(result)
+    } else {
+      navigate('/', { replace: true })
     }
   }
 

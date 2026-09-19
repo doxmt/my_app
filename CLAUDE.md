@@ -19,7 +19,7 @@
 - LLM 호출은 반드시 `LlmProvider` 어댑터를 거친다. 특정 벤더 SDK를 호출부에서 직접 쓰지 않는다.
 - 사용량은 `increment_daily_usage`(회원) / `increment_guest_usage`(비회원) RPC로만 증가시킨다. 한도 숫자는 코드에 하드코딩하지 않고 `rate_limit_config`에서 읽는다.
 - Supabase 프로젝트는 새 테이블을 Data API에 자동 노출하지 않고 RLS를 자동으로 켠다. 마이그레이션에 `GRANT`와 RLS 정책(공개 테이블의 select 포함)을 반드시 함께 쓴다.
-- `categories`/`questions`는 앱에서 쓰기 불가다. M5 전까지는 SQL 시드로, 이후에는 어드민 승인 흐름으로만 추가한다.
+- `categories`/`questions`는 앱에서 쓰기 불가다. M5-a부터는 콘텐츠 추가·수정을 어드민 웹앱(`admin/`)에서 직접 한다 — SQL 마이그레이션으로 시드하거나 이를 위해 PR을 만들지 않는다. 스키마·권한(GRANT/RLS/함수) 변경만 마이그레이션 파일로 남긴다.
 - PDF 텍스트 추출은 클라이언트나 Edge Function에서 하지 않는다 (Vercel Node 함수 담당).
 - 어드민(`admin/`)은 Flutter가 아닌 React 웹앱이다.
 - 대상 플랫폼은 Android/iOS/Web뿐이다. 데스크톱 플랫폼 폴더를 다시 만들지 않는다.
@@ -30,6 +30,7 @@
 > 사용자가 반복 실수나 잘못된 가정을 지적하면, 다음 세션에서 반복하지 않도록 이 섹션에 짧게 추가한다.
 
 - `docs/current_state.md`와 `docs/work_log.md`는 `/wrap`에서만 작성한다. `/plan`·`/start` 중이나 subagent(writer/executor)에게 이 파일 수정을 맡기지 않는다.
+- 문제/카테고리 콘텐츠를 SQL 마이그레이션 파일로 만들지 않는다 (M5-a 이후). 어드민 웹앱에서 직접 추가한다 — DB 데이터일 뿐 스키마가 아니므로 마이그레이션·PR로 남길 필요가 없다.
 
 ## Commands
 
