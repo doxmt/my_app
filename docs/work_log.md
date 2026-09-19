@@ -91,3 +91,21 @@
 - `lib/features/auth/**` (신규)
 - `lib/features/wrong_notes/data/supabase_wrong_note_repository.dart`, `lib/features/resume/data/supabase_resume_repository.dart` (신규)
 - `supabase/functions/interview-chat/index.ts`, `_shared/member_auth.ts`(신규), `_shared/rate_limit.ts`
+
+## 2026-09-20
+- `/plan`으로 M5-a(어드민 웹앱 + 콘텐츠 관리) 계획 수립 — 인터뷰로 로그인 방식(고정 계정+비밀번호 전용 화면), M5-a/M5-b 분할(API 키 미확보), 프레임워크(Vite+React+TS), 배포 위치(같은 레포 admin/ + 별도 Vercel 프로젝트) 확정. explore/document-specialist 조사 반영해 계획 확정
+- `/start`로 이슈 #13 생성, `feat/13-admin-console` 브랜치 시작, executor가 M5-a 1~5단계 전체 구현
+- 어드민 웹앱(admin/, Vite+React+TS+Tailwind v4+shadcn/ui) 신규: 비밀번호 전용 로그인, 카테고리 관리, 공유 문제 에디터(직접 작성/후보 승인/반려), 문제 목록(게시 토글)
+- `categories`/`questions` 어드민 쓰기·미게시 조회 RLS+GRANT, `approve_question_candidate` RPC(SECURITY DEFINER) 추가 및 원격 적용, anon 키로 거부 확인
+- CI에 admin lint+build 스텝 추가
+- 로그인 화면(M4, `login_page.dart`) 버튼 정렬 버그 발견 → 별도 이슈 #14 + `fix/14-login-align` 브랜치로 분리해 로컬 커밋(M5-a와 무관해 PR #15에는 미포함, 아직 push/PR 안 함)
+- `/submit`으로 PR #15 생성 (`feat/13-admin-console` → `develop`, `Closes #13`)
+- 문서 갱신: `docs/prd.md`, `docs/overview.md`, `docs/roadmap.md`(M5 → M5-a/M5-b 분할), `docs/adr.md`(ADR-016, ADR-017), `docs/architecture.md`(어드민 스택·권한·데이터 흐름 갱신), `docs/plans/m5a-admin-console.md`(신규), `docs/plans/open-questions.md`
+
+### 주요 변경 파일
+- `admin/` (신규 Vite+React+TS 어드민 앱 전체)
+- `supabase/migrations/20260920090000_m5a_admin_content_permissions.sql`
+- `.github/workflows/ci.yml`
+- `docs/prd.md`, `docs/overview.md`, `docs/roadmap.md`, `docs/adr.md`, `docs/architecture.md`
+- `docs/plans/m5a-admin-console.md`, `docs/plans/open-questions.md`
+- `lib/features/auth/presentation/login_page.dart` (별도 브랜치 `fix/14-login-align`, PR #15에는 미포함)

@@ -49,10 +49,19 @@
 - 회원은 `free` 한도 적용
 - 완료 기준: 비회원 때 쌓은 오답노트·이력서가 가입 후 계정에 남아 있고, 다른 계정 데이터는 보이지 않음
 
-## M5. 어드민 페이지 + 콘텐츠 자동화
-- React 어드민 웹앱 (`admin/`), 별도 Vercel 배포, `is_admin` 확인
-- `content-pipeline`: 자료 입력 → LLM 문제 초안 → 임베딩 → 중복 비교 → `question_candidates`
-- 후보 목록(중복 의심 표시), 수정·승인·반려 → 승인 시 `questions`에 게시
+## M5-a. 어드민 웹앱 + 수동 콘텐츠 관리
+- Vite + React + TypeScript 초기화, Tailwind v4 + shadcn/ui, 경로 별칭 `@/*` 설정
+- 비밀번호 전용 로그인: env var의 고정 이메일 + 입력한 비밀번호 → `signInWithPassword`
+- 카테고리 관리: 분야/주제 2단계 트리, 추가·수정 화면
+- 공유 문제 에디터 폼: 필드(`type`, `prompt`, `model_answer`, 카테고리, `difficulty`, `tags`) → 직접 작성(신규) 또는 후보 승인 두 경로 공유
+- 마이그레이션: `categories`/`questions` insert·update 권한 + 미게시 문제 select 정책, `question_candidates`는 기존 정책 유지
+- Vercel: 같은 레포 다시 Import, Root Directory `admin/`, 양쪽에 Ignored Build Step 설정
+- 완료 기준: SQL 없이 어드민에서 분야·주제·문제를 만들어 게시하면 앱에 즉시 보임
+
+## M5-b. 콘텐츠 파이프라인 (LLM + 임베딩)
+- **착수 조건**: LLM/임베딩 API 키 확보
+- `content-pipeline` Edge Function: 자료 입력 → LLM 문제 초안 → 임베딩 → 중복 비교 → `question_candidates(pending)`
+- 후보 목록(중복 의심 표시), 수정·승인·반려 → 승인 시 `questions`에 게시 (M5-a의 승인 UI 재사용)
 - 같은 파이프라인을 커맨드로도 실행 가능하게
 - 완료 기준: 중복 후보에 `duplicate_of`가 채워지고, 승인한 문제가 앱에 바로 보임
 

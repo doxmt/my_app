@@ -6,7 +6,7 @@
 - **백엔드**: Supabase — Postgres(+pgvector), Auth(OAuth: Google/GitHub, Apple/Kakao는 추후), Edge Functions(Deno)
 - **LLM**: Anthropic / OpenAI — Edge Function 내부 어댑터로 교체 가능 (`LLM_PROVIDER` env var)
 - **PDF 추출**: Vercel Node 서버리스 함수 (`unpdf` 라이브러리, `api/parse-pdf.ts`, 같은 Vercel 프로젝트에서 Flutter 웹과 함께 배포)
-- **어드민**: 별도 React 웹앱 (M5, 프레임워크 미정)
+- **어드민**: 별도 웹앱, Vite + React + TypeScript, Tailwind v4 + shadcn/ui (M5-a). 로그인은 고정 관리자 계정 + 비밀번호 전용 화면(`signInWithPassword` 내부 호출, ADR-016)
 - **배포**: 웹은 Vercel(develop → Preview, main → Production, path URL 전략 + SPA rewrite), CI는 GitHub Actions(`flutter analyze` + `flutter test`). PR에는 CI·Vercel 배포 결과를 한글 요약 댓글 하나로 갱신(`.github/scripts/pr-summary.js`, `ci.yml` + `pr-deploy.yml`의 `deployment_status`), Vercel 봇 댓글은 끔. GitHub 기본 브랜치는 `develop`
 - **화면**: 하단 탭 3개(홈 `/` · 모의면접 `/interview` · 내 정보 `/me`), `StatefulShellRoute.indexedStack`. 모바일 레이아웃 먼저, 웹 전용 레이아웃은 M6
 - **설정**: Supabase URL/publishable key, PDF 파싱 함수 오리진(`PDF_PARSE_BASE_URL`)은 `String.fromEnvironment`로 읽음. 로컬은 `--dart-define-from-file=env/dev.json`(gitignore), Vercel은 환경변수를 `--dart-define`으로 전달(`PDF_PARSE_BASE_URL`은 Vercel이 자동 주입하는 `$VERCEL_URL`로 배포마다 자기 자신을 가리킴) (CI는 불필요)
@@ -39,7 +39,7 @@ supabase/
     interview-chat/    모의면접 + LLM 어댑터
     content-pipeline/  문제 수집 → 초안 → 중복 비교 (M5)
 
-admin/                 React 어드민 웹앱 (M5)
+admin/                 Vite+React 어드민 웹앱 (M5-a), 별도 Vercel 프로젝트(Root Directory=admin/)로 배포
 ```
 
 ## 패턴
@@ -50,7 +50,7 @@ admin/                 React 어드민 웹앱 (M5)
 - **기기 ID**: 최초 실행 시 UUID를 만들어 로컬에 보관하고 Edge Function 호출 때 `X-Device-Id` 헤더로 보낸다. 서버는 이 값을 신뢰하지 않고 한도 계산 키로만 쓴다.
 - **LLM 호출은 서버에서만**: 앱은 Edge Function만 호출하고, API 키는 Supabase secrets에만 둔다.
 - **LLM 어댑터**: `LlmProvider` 인터페이스(`streamChat`) + `AnthropicProvider` / `OpenAiProvider`, `factory.ts`가 env var로 선택. Flutter 클라이언트는 `interview-chat`을 `package:http`로 Function URL에 직접 POST해 스트림을 수동 파싱한다 (`supabase_flutter`의 `functions.invoke`는 스트리밍 미지원).
-- **콘텐츠 쓰기는 앱에서 불가**: `categories` / `questions`는 공개 읽기 전용. 새 문제는 어드민 승인 흐름(`question_candidates` → `questions`)으로만 들어간다. M5 이전에는 SQL 시드로 넣는다.
+- **콘텐츠 쓰기는 앱에서 불가, 어드민에서만**: `categories` / `questions`는 일반 사용자에게 공개 읽기 전용(RLS `..._public_select`, `questions`는 `is_published=true`만). 쓰기와 미게시 조회는 `profiles.is_admin=true`인 어드민 RLS 정책으로만 허용한다(M5-a). 새 문제는 어드민 직접 작성 또는 승인 흐름(`question_candidates` → `approve_question_candidate` RPC → `questions`) 두 경로로 들어가며, 같은 에디터 폼을 공유한다. M5-a 이전에는 SQL 시드로만 넣었다.
 - **권한은 명시적으로**: 프로젝트 설정상 새 테이블이 Data API에 자동 노출되지 않고 RLS가 자동으로 켜진다. 마이그레이션마다 `GRANT`와 RLS 정책(공개 테이블의 select 포함)을 직접 작성한다.
 
 ## 데이터 모델
@@ -58,8 +58,8 @@ admin/                 React 어드민 웹앱 (M5)
 | 테이블 | 용도 | 접근 |
 |---|---|---|
 | `profiles` | auth.users 확장 (`is_admin`, `plan_tier`, `stripe_customer_id`) | 본인만 |
-| `categories` | 카테고리 (`parent_id`로 하위 분류) | 공개 읽기 |
-| `questions` | 문제 (`type`, `prompt`, `model_answer`, `embedding vector(1536)`) | 공개 읽기 |
+| `categories` | 카테고리 (`parent_id`로 하위 분류) | 공개 읽기, 쓰기는 어드민만 |
+| `questions` | 문제 (`type`, `prompt`, `model_answer`, `embedding vector(1536)`) | 공개 읽기(게시된 것만), 어드민은 미게시 포함 전체 읽기·쓰기 |
 | `question_candidates` | 수집된 문제 후보 (`duplicate_of`, `similarity_score`, `status`) | 어드민만 |
 | `practice_attempts` | 답변 시도 기록 (회원) | 본인만 |
 | `wrong_notes` | 오답노트 (회원, `unique(user_id, question_id)`) | 본인만 |
@@ -73,6 +73,9 @@ admin/                 React 어드민 웹앱 (M5)
 사용량 증가는 SECURITY DEFINER 함수로만 한다.
 - `increment_daily_usage(p_user_id, p_limit)`: 회원용. `update ... where count < limit` 한 문장으로 체크와 증가를 같이 한다.
 - `increment_guest_usage(p_device_key, p_ip_key, p_device_limit, p_ip_limit)`: 비회원용. 기기·IP 두 행을 잠그고 둘 다 한도 안일 때만 둘 다 증가시킨다.
+
+어드민 후보 승인도 같은 스타일의 SECURITY DEFINER 함수로 한다.
+- `approve_question_candidate(...)`: 어드민 웹앱이 authenticated 사용자로 직접 호출하므로(service_role 아님) 함수 내부에서 `profiles.is_admin`을 확인한 뒤, `questions` insert와 후보 `status='approved'` 갱신을 한 함수 호출 안에서 원자적으로 처리한다(M5-a).
 
 IP 한도는 같은 IP를 여러 사람이 쓰는 경우(학교, 회사)를 고려해 기기 한도보다 넉넉하게 잡는다.
 
@@ -104,9 +107,14 @@ OAuth 로그인 → 기기의 오답노트·이력서를 DB로 업로드 (자동
   → 정책: 오답노트는 `unique(user_id, question_id)` 기준 중복 무시 병합, 이력서는 서버 우선(기존이면 업로드 안 함), 성공한 항목만 로컬 삭제
   → 한도: guest → free
 
-[콘텐츠 수집 — M5]
+[콘텐츠 관리 — M5-a]
+어드민 로그인(비밀번호 전용 화면 → 고정 계정으로 signInWithPassword) → is_admin 확인
+직접 작성: 문제 에디터에 입력 → questions insert(embedding 없음, M5-b 백필 대상) → is_published 토글로 게시/비게시
+후보 승인: question_candidates(pending) 목록 → 같은 문제 에디터로 다듬기 → approve_question_candidate RPC(승인) 또는 status=rejected(반려)
+
+[콘텐츠 수집 자동화 — M5-b, API 키 확보 후]
 어드민 버튼 or 커맨드 → 자료 입력 → LLM 문제 초안 → 임베딩 → pgvector 유사도 비교
-  → question_candidates(pending) → 어드민 승인 → questions(is_published)
+  → question_candidates(pending) → 어드민 승인(M5-a 화면 재사용) → questions(is_published)
 ```
 
 ## 네이밍 규칙

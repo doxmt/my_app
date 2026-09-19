@@ -39,3 +39,19 @@ jobs:
       - name: 실패 처리
         if: steps.analyze.outcome != 'success' || steps.test.outcome != 'success'
         run: exit 1
+
+  admin:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./admin
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: admin/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
