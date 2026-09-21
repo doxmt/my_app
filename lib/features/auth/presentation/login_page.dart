@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../domain/auth_exception.dart';
 import 'auth_providers.dart';
 
-/// 로그인 화면. Google/GitHub 버튼을 보여주고, 취소·실패 시 에러 메시지를 보여준다.
+/// 로그인 화면. provider별 로그인 버튼을 보여주고, 취소·실패 시 에러 메시지를 보여준다.
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
 
@@ -42,6 +42,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   @override
   Widget build(BuildContext context) {
     final actions = ref.read(authActionsProvider);
+    final providers = <({String label, Future<void> Function() action})>[
+      (label: 'Google로 계속하기', action: actions.signInWithGoogle),
+      (label: 'GitHub로 계속하기', action: actions.signInWithGithub),
+    ];
 
     return Scaffold(
       appBar: AppBar(title: const Text('로그인')),
@@ -55,19 +59,22 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const Text(
-                  'Google 또는 GitHub 계정으로 로그인하면\n기기에 저장된 오답노트와 이력서가 계정으로 이동합니다.',
+                  '소셜 계정으로 로그인하면\n기기에 저장된 오답노트와 이력서가 계정으로 이동합니다.',
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: _isLoading ? null : () => _signIn(actions.signInWithGoogle),
-                  child: const Text('Google로 계속하기'),
-                ),
-                const SizedBox(height: 12),
-                OutlinedButton(
-                  onPressed: _isLoading ? null : () => _signIn(actions.signInWithGithub),
-                  child: const Text('GitHub로 계속하기'),
-                ),
+                for (final (index, provider) in providers.indexed) ...[
+                  if (index > 0) const SizedBox(height: 12),
+                  index == 0
+                      ? ElevatedButton(
+                          onPressed: _isLoading ? null : () => _signIn(provider.action),
+                          child: Text(provider.label),
+                        )
+                      : OutlinedButton(
+                          onPressed: _isLoading ? null : () => _signIn(provider.action),
+                          child: Text(provider.label),
+                        ),
+                ],
                 if (_isLoading) ...[const SizedBox(height: 16), const Center(child: CircularProgressIndicator())],
                 if (_errorMessage != null) ...[
                   const SizedBox(height: 16),

@@ -1,11 +1,11 @@
 {
-    "name": "my_app",
-    "short_name": "my_app",
+    "name": "DevInterview",
+    "short_name": "DevInterview",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "개발자 기술면접 준비 앱",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
