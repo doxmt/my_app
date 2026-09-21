@@ -7,6 +7,7 @@ import '../../../core/storage/local_json_store.dart';
 import '../../../core/supabase/supabase_client_provider.dart';
 import '../../resume/data/local_resume_repository.dart';
 import '../../wrong_notes/data/local_wrong_note_repository.dart';
+import '../data/apple_auth_client.dart';
 import '../data/auth_actions.dart';
 import '../data/google_auth_client.dart';
 import '../data/local_data_migration_service.dart';
@@ -28,11 +29,14 @@ final googleAuthClientProvider = Provider<GoogleAuthClient>((ref) {
   );
 });
 
+final appleAuthClientProvider = Provider<AppleAuthClient>((ref) => AppleAuthClient());
+
 final authActionsProvider = Provider<AuthActions>((ref) {
   final config = ref.watch(appConfigProvider);
   return AuthActions(
     client: ref.watch(supabaseClientProvider),
     googleAuthClient: ref.watch(googleAuthClientProvider),
+    appleAuthClient: ref.watch(appleAuthClientProvider),
     authRedirectUrl: config.authRedirectUrl,
   );
 });
@@ -53,9 +57,7 @@ final localDataMigrationServiceProvider = Provider<LocalDataMigrationService>((r
 ///
 /// `Session` 전체가 아니라 userId만 노출한다 — 세션은 토큰 갱신(약 1시간 주기)마다 새 객체로
 /// 교체되는데, Session을 그대로 watch하면 그때마다 리포지토리 provider가 재생성돼 목록이 깜빡인다.
-final currentUserIdProvider = NotifierProvider<CurrentUserIdNotifier, String?>(
-  CurrentUserIdNotifier.new,
-);
+final currentUserIdProvider = NotifierProvider<CurrentUserIdNotifier, String?>(CurrentUserIdNotifier.new);
 
 class CurrentUserIdNotifier extends Notifier<String?> {
   @override
