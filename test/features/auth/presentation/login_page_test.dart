@@ -5,6 +5,7 @@ import 'package:my_app/features/auth/data/apple_auth_client.dart';
 import 'package:my_app/features/auth/data/auth_actions.dart';
 import 'package:my_app/features/auth/data/google_auth_client.dart';
 import 'package:my_app/features/auth/presentation/auth_providers.dart';
+import 'package:my_app/features/auth/presentation/login_buttons.dart';
 import 'package:my_app/features/auth/presentation/login_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -13,35 +14,70 @@ class FakeGoogleAuthClient implements GoogleAuthClient {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
+Widget _app({ThemeMode mode = ThemeMode.light}) {
+  return ProviderScope(
+    overrides: [
+      authActionsProvider.overrideWithValue(
+        AuthActions(
+          client: SupabaseClient(
+            'https://example.supabase.co',
+            'publishable-key',
+            authOptions: const AuthClientOptions(autoRefreshToken: false),
+          ),
+          googleAuthClient: FakeGoogleAuthClient(),
+          appleAuthClient: AppleAuthClient(),
+          authRedirectUrl: 'app://login-callback',
+        ),
+      ),
+    ],
+    child: MaterialApp(
+      themeMode: mode,
+      theme: ThemeData.light(),
+      darkTheme: ThemeData.dark(),
+      home: const LoginPage(),
+    ),
+  );
+}
+
+bool _hasAsset(String name) => find.byWidgetPredicate(
+      (w) => w is Image && w.image is AssetImage && (w.image as AssetImage).assetName == name,
+    ).evaluate().isNotEmpty;
+
 void main() {
   testWidgets('provider 버튼이 Google, Apple, Kakao, GitHub 순서로 표시된다', (tester) async {
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          authActionsProvider.overrideWithValue(
-            AuthActions(
-              client: SupabaseClient(
-                'https://example.supabase.co',
-                'publishable-key',
-                authOptions: const AuthClientOptions(autoRefreshToken: false),
-              ),
-              googleAuthClient: FakeGoogleAuthClient(),
-              appleAuthClient: AppleAuthClient(),
-              authRedirectUrl: 'app://login-callback',
-            ),
-          ),
-        ],
-        child: const MaterialApp(home: LoginPage()),
-      ),
-    );
+    await tester.pumpWidget(_app());
 
-    expect(find.text('Apple로 계속하기'), findsOneWidget);
-    expect(find.byIcon(Icons.apple), findsOneWidget);
-    expect(find.byIcon(Icons.chat_bubble), findsOneWidget);
-    final google = tester.getTopLeft(find.text('Google로 계속하기')).dy;
-    final apple = tester.getTopLeft(find.text('Apple로 계속하기')).dy;
-    final kakao = tester.getTopLeft(find.text('카카오로 계속하기')).dy;
-    final github = tester.getTopLeft(find.text('GitHub로 계속하기')).dy;
-    expect(google < apple && apple < kakao && kakao < github, isTrue);
+    final labels = ['Google 계정으로 로그인', 'Apple로 로그인', '카카오 로그인', 'GitHub로 로그인'];
+    for (final l in labels) {
+      expect(find.text(l), findsOneWidget);
+    }
+    final ys = [for (final l in labels) tester.getTopLeft(find.text(l)).dy];
+    expect(ys[0] < ys[1] && ys[1] < ys[2] && ys[2] < ys[3], isTrue);
+  });
+
+  testWidgets('4개 버튼의 높이가 모두 44다', (tester) async {
+    await tester.pumpWidget(_app());
+
+    for (final type in [GoogleLoginButton, AppleLoginButton, KakaoLoginButton, GithubLoginButton]) {
+      expect(tester.getSize(find.byType(type)).height, 44);
+    }
+  });
+
+  testWidgets('브랜드 로고 에셋을 쓰고 Material 아이콘은 쓰지 않는다', (tester) async {
+    await tester.pumpWidget(_app());
+
+    expect(_hasAsset('assets/login/kakao_symbol.png'), isTrue);
+    expect(_hasAsset('assets/login/google_g.png'), isTrue);
+    expect(_hasAsset('assets/login/github_invertocat_white.png'), isTrue);
+    expect(find.byIcon(Icons.chat_bubble), findsNothing);
+  });
+
+  testWidgets('다크 테마에서 렌더링되고 GitHub 로고가 black 에셋으로 바뀐다', (tester) async {
+    await tester.pumpWidget(_app(mode: ThemeMode.dark));
+
+    expect(tester.takeException(), isNull);
+    expect(_hasAsset('assets/login/github_invertocat_black.png'), isTrue);
+    expect(_hasAsset('assets/login/github_invertocat_white.png'), isFalse);
+    expect(_hasAsset('assets/login/kakao_symbol.png'), isTrue);
   });
 }

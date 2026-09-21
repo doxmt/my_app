@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../domain/auth_exception.dart';
 import 'auth_providers.dart';
+import 'login_buttons.dart';
 
 /// 로그인 화면. provider별 로그인 버튼을 보여주고, 취소·실패 시 에러 메시지를 보여준다.
 class LoginPage extends ConsumerStatefulWidget {
@@ -42,22 +43,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   @override
   Widget build(BuildContext context) {
     final actions = ref.read(authActionsProvider);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final appleStyle = OutlinedButton.styleFrom(
-      backgroundColor: isDark ? Colors.white : Colors.black,
-      foregroundColor: isDark ? Colors.black : Colors.white,
-    );
-    final kakaoStyle = OutlinedButton.styleFrom(
-      backgroundColor: const Color(0xFFFEE500),
-      foregroundColor: const Color(0xD9000000),
-    );
-    final providers = <({String label, Future<void> Function() action, Widget? icon, ButtonStyle? style})>[
-      (label: 'Google로 계속하기', action: actions.signInWithGoogle, icon: null, style: null),
-      (label: 'Apple로 계속하기', action: actions.signInWithApple, icon: const Icon(Icons.apple), style: appleStyle),
-      (label: '카카오로 계속하기', action: actions.signInWithKakao, icon: const Icon(Icons.chat_bubble), style: kakaoStyle),
-      (label: 'GitHub로 계속하기', action: actions.signInWithGithub, icon: null, style: null),
-    ];
-
     return Scaffold(
       appBar: AppBar(title: const Text('로그인')),
       body: Center(
@@ -74,22 +59,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
-                for (final (index, provider) in providers.indexed) ...[
-                  if (index > 0) const SizedBox(height: 12),
-                  index == 0
-                      ? ElevatedButton.icon(
-                          onPressed: _isLoading ? null : () => _signIn(provider.action),
-                          style: provider.style,
-                          icon: provider.icon,
-                          label: Text(provider.label),
-                        )
-                      : OutlinedButton.icon(
-                          onPressed: _isLoading ? null : () => _signIn(provider.action),
-                          style: provider.style,
-                          icon: provider.icon,
-                          label: Text(provider.label),
-                        ),
-                ],
+                GoogleLoginButton(enabled: !_isLoading, onPressed: () => _signIn(actions.signInWithGoogle)),
+                const SizedBox(height: 12),
+                AppleLoginButton(enabled: !_isLoading, onPressed: () => _signIn(actions.signInWithApple)),
+                const SizedBox(height: 12),
+                KakaoLoginButton(enabled: !_isLoading, onPressed: () => _signIn(actions.signInWithKakao)),
+                const SizedBox(height: 12),
+                GithubLoginButton(enabled: !_isLoading, onPressed: () => _signIn(actions.signInWithGithub)),
                 if (_isLoading) ...[const SizedBox(height: 16), const Center(child: CircularProgressIndicator())],
                 if (_errorMessage != null) ...[
                   const SizedBox(height: 16),
