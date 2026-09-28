@@ -1,43 +1,38 @@
 # 현재 상태
 
-마지막 갱신: 2026-09-20
+마지막 갱신: 2026-09-28
 
 ## 완료
 - Flutter 프로젝트, GitHub 레포(`doxmt/my_app`), Claude Code 하네스, Vercel 웹 배포 + GitHub Actions CI
-- M0. 설계 문서화, 데스크톱 플랫폼 폴더 삭제
-- M1. Supabase 세팅 + 기기 ID + 내비게이션 뼈대 (PR #2)
-- M2. 카테고리/문제풀이 + 로컬 오답노트 (PR #7, 머지 완료)
-- M3. 이력서 입력 + 모의면접 (비회원) — PR #10으로 머지 완료
-- M4. OAuth 회원가입 (Google + GitHub) — PR #12 머지 완료
-- M5-a. 어드민 웹앱 + 콘텐츠 관리 — 구현 완료, PR #15(`Closes #13`) 생성됨, 아직 머지 전
-  - `admin/`(Vite+React+TS+Tailwind v4+shadcn/ui): 비밀번호 전용 로그인(고정 관리자 계정), 카테고리 관리, 공유 문제 에디터(직접 작성/후보 승인/반려), 문제 목록(게시 토글)
-  - `categories`/`questions` 어드민 쓰기·미게시 조회 RLS+GRANT, `approve_question_candidate` RPC — 원격 적용 및 anon 키로 거부 확인 완료
-  - CI에 admin lint+build 스텝 추가, `flutter analyze`/`flutter test`(45개) 전부 통과(앱 코드 무변경)
-  - 계획: `docs/plans/m5a-admin-console.md`, 결정: `docs/adr.md` ADR-016, ADR-017
-  - M5-b(`content-pipeline`, LLM 초안+임베딩 중복비교)는 API 키 확보 후 별도 작업
+- M0~M5-a: 설계 문서화, Supabase 세팅, 카테고리/문제풀이, 이력서+모의면접(비회원), OAuth 회원가입(Google+GitHub), 어드민 웹앱 — 전부 `develop`에 머지 완료
+- **이번 세션(이슈 #21, 브랜치 `feat/21-apple-kakao-login-home-ui`)**: 계획 파일 `docs/plans/oauth-apple-kakao-home-ui-llm.md` 기준 진행
+  - 번들 ID `com.doxmt.devinterview` / 앱 표시명 `DevInterview`로 교체, 딥링크 스킴 등록
+  - Apple 로그인(네이티브 `sign_in_with_apple`) + Kakao 로그인(`signInWithOAuth`, 이메일 미필수) 구현
+  - 로그인 버튼 4종(Google/Apple/Kakao/GitHub)을 각 사 공식 브랜드 가이드 기준으로 재구현, 공식 에셋은 `assets/login/`에 출처와 함께 정리(README)
+  - 홈 분야 카드 UI + 학습하기/문제풀기 선택 화면·주제 목록 화면 카드화(`category_icons.dart`로 `slug→IconData` 매핑, DB 변경 없음)
+  - 문제풀기: 주제 선택 시 목록 없이 랜덤 문제로 바로 진입 + 분야 전체 랜덤 카드 추가
+  - 콘텐츠 대량 확충: 모바일·인프라/DevOps 신규 분야(14주제 140문제), 프론트엔드 7주제(70문제), AI 3주제(30문제) — 서브에이전트 조사 작성 → 독립 2차 검증 → 중복 확인 후 게시. 전체 게시 문제 24개 → **264개**
+  - LLM 키 연결: OpenAI 발급·`supabase secrets set`로 등록(`LLM_PROVIDER=openai`), `interview-chat`의 빈 `catch{}` 4곳에 에러 로깅 추가·재배포. OpenAI 크레딧 충전 후 curl로 실제 SSE 스트리밍 성공 확인(비회원 경로만, `deviceRemaining`/`ipRemaining` 정상 반영)
+  - `rate_limit_config` 현재값 확인: `guest_device` 3회/일, `guest_ip` 40회/일, `free`(회원) 12회/일. `paid` 등급은 아직 미등록
 
 ## 예정
-- PR #15 CI 확인 → 머지 → `git pull origin develop`
-- **M5-a 관련 수동 작업 필요**: Supabase 대시보드에서 관리자 계정 생성 + `profiles.is_admin=true`, `admin/.env`의 `VITE_ADMIN_EMAIL` 실제 값 교체, Vercel Dashboard에서 레포 재Import(Root Directory=`admin/`)로 새 프로젝트 생성 + 환경변수 설정 + 양쪽 프로젝트 Ignored Build Step 설정, 배포 후 실제 로그인→콘텐츠 생성→Flutter 앱 노출 E2E 확인
-- 이슈 #14(`fix: 로그인 화면 버튼 정렬`) — `fix/14-login-align` 브랜치에 로컬 커밋만 있고 아직 push/PR 안 함
-- M5-a Open Questions(`docs/plans/open-questions.md` "M5-a 어드민 웹앱" 섹션): Vercel Password Protection 추가 여부, 어드민 직접 작성 문제의 embedding 백필(M5-b 몫), 더미 후보 SQL 커밋 여부, 문제/카테고리 삭제 정책, 이메일 가입 경로 잠금 여부, 어드민 검색/필터 시점
-- M5-b(`content-pipeline`) 착수 조건인 LLM/임베딩 API 키 확보 — 시점 미정. 확보되면 M3/M4 LLM 실호출 검증(비회원·회원 경로)도 같이 처리 고려
-- PR #12(M4) 관련 수동 검증 여전히 미완료: Google Cloud Console/GitHub OAuth App 등록, Supabase 대시보드 provider·Redirect URL 설정, iOS 시뮬레이터·Web 실제 로그인→데이터 이전→로그아웃 확인, iOS/Android 딥링크 등록
-- `interview-chat` 회원 세션이 completed로 전환되지 않고 항상 기존 active 세션에 이어붙임 — 후속 작업 필요 여부 논의 필요
-- Apple/Kakao OAuth 제공자 추가 시점 미정
-- 사용자 피드백: 홈 분야 목록을 카드형 UI(아이콘/이미지)로 바꾸고 싶어함 — 처리 시점 미정
-- iOS 시뮬레이터로 M2 드릴다운 화면(문제풀이 → 오답노트) 전체 여정 재확인 필요
-- Android는 이 Mac에 AVD가 없어 여전히 미확인
+- 이번 세션 마지막 변경(`interview-chat` 에러 로깅) 커밋 → push → PR 생성 → CI 확인 (wrap 다음 단계로 진행 중)
+- **웹(Chrome) 모의면접 종단 검증 미완료**: curl 스모크만 확인했고, 실제 Flutter 웹 빌드에서 `package:http` 스트리밍이 청크 단위로 끊기지 않고 받아지는지 확인 안 됨(ADR-013이 미뤘던 항목)
+- **회원(로그인) 경로 LLM 실호출 미검증**: 비회원 경로만 확인함
+- **앱 아이콘 미적용**: 시안(말풍선+`</>`)만 만들어 둠, 승인 시 `flutter_launcher_icons`로 적용 필요
+- **외부 콘솔 설정(사용자 몫, M-2~M-7)**: Apple Developer Services ID·.p8 키, Apple App ID Sign in with Apple 활성화, Kakao Developers 콘솔(Redirect URI·Client Secret·동의항목), Supabase Apple/Kakao provider 설정 및 "Allow users without an email", 기존 Google iOS OAuth 클라이언트를 새 번들 ID(`com.doxmt.devinterview`)로 재등록
+- iOS 시뮬레이터·Android에서 Apple/Kakao 로그인 실제 동작(콘솔 설정 완료 후) 및 GitHub 로그인 브라우저→앱 복귀 확인 안 됨
+- M5-a 수동 작업 잔여(이전 세션분): 어드민 콘텐츠 생성 → 앱 노출 E2E, PR #12(M4 OAuth) 관련 Google/GitHub 콘솔 등록·실제 로그인 검증도 여전히 미완
+- M5-b(`content-pipeline`, 임베딩) — 이번 세션에서 착수 안 함(임베딩 키 별도 필요)
+- `interview-chat` 회원 세션이 completed로 전환되지 않는 기존 이슈는 이번 세션에서 다루지 않음
 
 ## 참고사항
-- 환경: Flutter 3.47.4 / Dart 3.13.3, Supabase CLI 2.104.0, Vercel CLI 59.20.0(59.23.2로 업그레이드 권장), iOS 배포 타깃 15.0, Node 22(admin CI)
-- Supabase: ref `bmewpbkllmlikzqkxalw` (Tokyo). 새 테이블 자동 노출 끔 + 자동 RLS → 마이그레이션마다 GRANT·정책 필수
-- **postgrest Dart 클라이언트의 `.order()`는 `ascending` 기본값이 `false`**(SQL/REST 기본과 반대) — 정렬이 필요한 모든 쿼리에 `ascending: true`(또는 의도한 값)를 명시해야 함
-- 어드민 승인 RPC(`approve_question_candidate`)는 어드민 웹앱이 `authenticated`로 직접 호출하므로, `service_role` 전용인 `increment_daily_usage`/`increment_guest_usage`와 달리 **함수 내부에서 `profiles.is_admin`을 확인**한다 (M5-a에서 확인)
-- 마이그레이션 파일명은 `YYYYMMDDHHMMSS_snake_case_description.sql` 형식, 타임스탬프는 항상 마지막 파일보다 커야 함
-- **회원/비회원 리포지토리 분기는 `Session` 객체가 아니라 `currentUserIdProvider`(`String? userId`만 watch)로 한다** — `Session`을 watch하면 토큰 갱신(약 1시간 주기)마다 리포지토리 provider가 rebuild되어 목록이 깜빡인다 (M4에서 확인)
-- `functions.invoke`는 스트리밍 응답을 지원하지 않음 → Edge Function을 스트리밍으로 쓰려면 `package:http`로 Function URL 직접 호출 (ADR-013)
+- 환경: Flutter 3.47.4 / Dart 3.13.3, Supabase CLI 2.104.0(2.118.0으로 업그레이드 권장), Node 22(admin CI)
+- Supabase: ref `bmewpbkllmlikzqkxalw` (Tokyo/Seoul 리전 혼재 로그 확인됨). `interview-chat` v7~8, OpenAI 프로바이더로 전환됨(secrets: `LLM_PROVIDER=openai`, `OPENAI_API_KEY`)
+- **Edge Function 에러는 반드시 `console.error`로 남겨야 원격 디버깅이 가능하다** — 빈 `catch {}`로 스웰로우하면 Supabase 로그에 아무것도 안 남아 원인 파악이 불가능했음(OpenAI `insufficient_quota` 진단 때 확인)
+- **위젯의 기반 타입을 바꾸면(`ConsumerWidget` → `ConsumerStatefulWidget` 등) 핫 리로드가 아니라 핫 리스타트가 필요하다** — `TopicListPage` 변경 때 `type 'X' is not a subtype of ConsumerWidget?` 오류로 확인
+- 콘텐츠 문제는 반드시 서브에이전트가 웹 검색으로 공식 문서를 대조하며 작성하게 하고, 별도 독립 에이전트로 2차 검증을 거친 뒤에만 게시한다(1차 작성만으로는 일반 지식 기반 오류가 다수 나왔음)
+- 번들 ID `com.doxmt.devinterview`, 딥링크 스킴 `com.doxmt.devinterview://login-callback`, 앱 표시명 `DevInterview`로 확정(ADR-018)
+- Kakao 심볼 등 공식 로고 에셋은 벤더의 원본 다운로드 리소스(PSD 등)에서 직접 추출해야 안전 — 서드파티 아이콘으로 대체하면 브랜드 가이드 위반
 - 로컬 실행: `flutter run --dart-define-from-file=env/dev.json`
-- 어드민 로컬 실행: `cd admin && npm run dev` (`admin/.env` 필요, `.env.example` 참고)
 - GitHub 기본 브랜치는 `develop` (Vercel Production 브랜치는 `main`)
-- 구조 스케치: https://claude.ai/artifact/MgDZ3r2UzX3iky8AxuZh5E
