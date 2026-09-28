@@ -226,7 +226,8 @@ async function handleChat(req: Request): Promise<Response> {
   let first: IteratorResult<string>;
   try {
     first = await iterator.next();
-  } catch {
+  } catch (error) {
+    console.error('LLM upstream error (guest, first chunk):', error);
     return jsonResponse(502, {
       code: 'LLM_UPSTREAM_ERROR',
       message: '면접 답변 생성에 실패했습니다. 잠시 후 다시 시도해 주세요.',
@@ -252,7 +253,8 @@ async function handleChat(req: Request): Promise<Response> {
           current = await iterator.next();
         }
         controller.enqueue(encoder.encode(sseEvent('done', {})));
-      } catch {
+      } catch (error) {
+        console.error('LLM upstream error (guest, stream):', error);
         controller.enqueue(
           encoder.encode(
             sseEvent('error', {
@@ -396,7 +398,8 @@ async function handleMemberChat(
   let first: IteratorResult<string>;
   try {
     first = await iterator.next();
-  } catch {
+  } catch (error) {
+    console.error('LLM upstream error (member, first chunk):', error);
     return jsonResponse(502, {
       code: 'LLM_UPSTREAM_ERROR',
       message: '면접 답변 생성에 실패했습니다. 잠시 후 다시 시도해 주세요.',
@@ -424,7 +427,8 @@ async function handleMemberChat(
           content: fullReply,
         });
         controller.enqueue(encoder.encode(sseEvent('done', {})));
-      } catch {
+      } catch (error) {
+        console.error('LLM upstream error (member, stream):', error);
         controller.enqueue(
           encoder.encode(
             sseEvent('error', {

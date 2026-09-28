@@ -109,3 +109,27 @@
 - `docs/prd.md`, `docs/overview.md`, `docs/roadmap.md`, `docs/adr.md`, `docs/architecture.md`
 - `docs/plans/m5a-admin-console.md`, `docs/plans/open-questions.md`
 - `lib/features/auth/presentation/login_page.dart` (별도 브랜치 `fix/14-login-align`, PR #15에는 미포함)
+
+## 2026-09-28
+- `/plan`으로 Apple/Kakao 로그인 + 홈 카드 UI + LLM 키 연결 계획 수립 (ADR-018, roadmap/architecture/prd/overview 갱신)
+- `/start`로 이슈 #21 생성, `feat/21-apple-kakao-login-home-ui` 브랜치 시작
+- 번들 ID `com.doxmt.devinterview`, 앱 표시명 `DevInterview`로 교체, 딥링크 스킴 등록, 로그인 화면 provider 버튼 구조 정리
+- Apple 로그인(iOS 네이티브 `sign_in_with_apple` + nonce, Web/Android `signInWithOAuth`) + Kakao 로그인(`signInWithOAuth`, 이메일 없이 가입 허용) 구현
+- 4개 로그인 버튼(Google/Apple/Kakao/GitHub)을 각 사 공식 브랜드 가이드에 맞게 재구현 — 공식 로고 에셋 확보(Google G, Kakao 심볼은 공식 PSD 벡터 레이어 추출, GitHub Invertocat), `assets/login/README.md`에 출처·규정 기록, 버튼 크기·글자·문구 통일
+- 홈 분야 카드 UI(`category_icons.dart`, `slug → IconData` 매핑, DB 변경 없음) + 학습하기/문제풀기 선택 화면·주제 목록 화면도 카드 UI로 통일, 카드 오버플로 버그 수정
+- 문제풀기 UX 개선: 주제 선택 시 목록 없이 랜덤 문제로 바로 진입, 분야 전체 랜덤 카드 추가
+- 콘텐츠 대량 확충: 모바일·인프라/DevOps 신규 분야(14주제 140문제), 프론트엔드 7주제(70문제: React/TypeScript/웹 성능·접근성/Next.js/CSS 레이아웃/빌드 도구/라이브러리), AI 3주제(30문제) — 전부 서브에이전트로 조사 작성 → 독립 2차 사실검증 → 중복 확인 후 게시. 전체 문제 24개 → 264개로 증가
+- LLM 키 연결: OpenAI 키 발급·`supabase secrets set`로 등록(`LLM_PROVIDER=openai`, `OPENAI_API_KEY`), `interview-chat`의 빈 `catch {}` 4곳에 에러 로깅 추가 후 재배포 — OpenAI 크레딧 소진 문제를 로그로 진단, 크레딧 충전 후 실제 SSE 스트리밍 성공 확인(curl 기준, 비회원 경로)
+- 앱 아이콘 시안(말풍선 + `</>`, SVG/PNG) 제작 — 아직 앱에 미적용, 승인 대기
+- `rate_limit_config` 확인: guest_device 3회, guest_ip 40회, free(회원) 12회/일
+
+### 주요 변경 파일
+- `ios/Runner.xcodeproj/project.pbxproj`, `ios/Runner/Info.plist`, `ios/Runner/Runner.entitlements`
+- `android/app/build.gradle.kts`, `android/app/src/main/AndroidManifest.xml`, `android/app/src/main/kotlin/com/doxmt/devinterview/MainActivity.kt`
+- `web/index.html`, `web/manifest.json`
+- `lib/features/auth/data/apple_auth_client.dart`, `lib/features/auth/data/auth_actions.dart`, `lib/features/auth/presentation/login_buttons.dart`, `lib/features/auth/presentation/login_page.dart`, `lib/features/auth/presentation/auth_providers.dart`, `lib/features/me/presentation/me_page.dart`
+- `assets/login/` (google_g.png, kakao_symbol.png/svg, github_invertocat_*.png, README.md)
+- `lib/features/categories/presentation/category_icons.dart`, `categories_page.dart`
+- `lib/features/practice/presentation/field_page.dart`, `topic_list_page.dart`, `question_list_page.dart`
+- `supabase/functions/interview-chat/index.ts` (에러 로깅 추가)
+- `docs/plans/oauth-apple-kakao-home-ui-llm.md`, `docs/plans/open-questions.md`, `docs/adr.md`, `docs/roadmap.md`, `docs/architecture.md`, `docs/prd.md`, `docs/overview.md`

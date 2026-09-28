@@ -59,3 +59,16 @@
 - [ ] M5-b 착수 조건인 LLM/임베딩 API 키 확보 시점 — 미정 (M3/M4 실호출 검증도 같은 키에 묶여 있음)
 - [ ] 어드민에 문제 검색/필터가 필요해지는 시점 — 12문제 규모에선 불필요하나 늘어나면 필요
 - [ ] (이월) M4 Flutter 앱 실기기 로그인 검증 + iOS/Android 딥링크 등록 — M5-a와 독립 트랙, 시점 미정
+
+## Apple/Kakao 로그인 + 홈 카드 UI + LLM 키 연결 - 2026-09-21
+
+- [x] **번들 ID를 지금 확정할지** — **확정(2026-09-21): `com.doxmt.devinterview`(iOS/Android 공통), 앱 표시명 `DevInterview`, 1단계에서 교체.** 이전 검토: 현재 iOS `com.example.myApp` / Android `com.example.my_app`(Flutter 기본값). Apple App ID 등록과 App Store 제출에는 `com.example`을 쓸 수 없다. Apple/Kakao 콘솔 등록을 끝낸 뒤에 바꾸면 콘솔 작업과 기존 Google iOS OAuth 클라이언트 ID 등록을 전부 다시 해야 한다. **추천 기본값: 이번 작업 1단계에서 실제 ID로 한 번에 교체** (나중에 두 번 일하지 않기 위해)
+- [x] **딥링크 스킴 값 확정** — **확정(2026-09-21): `com.doxmt.devinterview://login-callback`.** 이전 검토: reverse-domain 형식 권장. 번들 ID를 유지할 경우 **추천 기본값: `com.example.myapp://login-callback`** (iOS 스킴은 소문자 통일). 번들 ID를 바꾸면 그 값에 맞춘다. Supabase Additional Redirect URLs · `Info.plist` · `AndroidManifest.xml` · `AUTH_REDIRECT_URL` 네 곳이 같은 값이어야 한다
+- [ ] **Kakao 이메일 필수 여부** — `account_email` 동의항목은 Biz App 전용. **추천 기본값(잠정 확정): 이메일 없이 가입 허용** (Supabase "Allow users without an email"). 출시 후 이메일 기반 기능(복구·알림)이 필요해지면 Biz App 전환 여부를 재평가 (ADR-018)
+- [ ] **LLM 벤더 확정** — 코드 기본값은 `LLM_PROVIDER=anthropic`, 기본 모델 `claude-sonnet-5`. **추천 기본값: 코드 기본값 그대로 두고 Anthropic 키만 등록** (OpenAI는 크레딧 충전이 추가로 필요). 비용/품질 비교는 실사용 후
+- [ ] **Flutter Web에서 SSE 스트리밍이 실제로 청크 단위로 도착하는지** — `package:http`는 브라우저 XHR 위에서 동작해 응답이 버퍼링될 수 있다. 버퍼링되면 웹 전용 fetch/`ReadableStream` 경로가 필요한데, 이번 작업(5단계)에서 고칠지 M6로 넘길지 검증 결과를 보고 결정
+- [ ] **임베딩 API 키** — M5-b(콘텐츠 파이프라인) 몫. 이번 작업 범위 아님
+- [ ] **회원 면접 세션이 `completed`로 전환되지 않는 문제** — 별도 이슈로 분리. 이번 PR에서 다루지 않음
+- [ ] **동일 이메일로 다른 provider 가입 시 계정 병합** — Supabase 기본 동작(이메일 일치 시 자동 링크 여부)을 그대로 두고 별도 처리하지 않는다. Kakao는 이메일이 없어 항상 별도 계정이 된다는 점만 인지
+- [ ] **Apple 이름 미제공 처리** — Apple은 최초 로그인에만 이름을 준다. 네이티브 흐름에서 `raw_user_meta_data`에 이름이 안 들어오면 표시명이 빈다. **추천 기본값: 빈 표시명을 허용하고 `updateUser` 저장은 하지 않음**(범위 최소화). 2단계 검증 결과에 따라 재검토
+- [ ] **Apple client secret JWT 6개월 갱신 운영** — 만료 시 Apple 로그인 전면 실패. 갱신 알림을 어디에(캘린더 / GitHub 이슈) 남길지 미정

@@ -21,7 +21,14 @@ class MePage extends ConsumerWidget {
           if (user != null)
             ListTile(
               leading: const Icon(Icons.account_circle),
-              title: Text(user.userMetadata?['full_name'] as String? ?? user.email ?? '회원'),
+              title: Text(
+                (user.userMetadata?['full_name'] ??
+                        user.userMetadata?['name'] ??
+                        user.userMetadata?['nickname'] ??
+                        user.email ??
+                        '회원')
+                    .toString(),
+              ),
               subtitle: user.email == null ? null : Text(user.email!),
               trailing: TextButton(
                 onPressed: () => ref.read(authActionsProvider).signOut(),

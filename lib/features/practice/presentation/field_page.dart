@@ -33,25 +33,71 @@ class FieldPage extends ConsumerWidget {
           ),
         ),
         data: (field) {
-          return ListView(
-            children: [
-              ListTile(
-                title: const Text('학습하기'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () {
-                  context.push('/categories/$fieldSlug/${PracticeMode.study.pathValue}');
-                },
-              ),
-              ListTile(
-                title: const Text('문제풀기'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () {
-                  context.push('/categories/$fieldSlug/${PracticeMode.practice.pathValue}');
-                },
-              ),
-            ],
+          return Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _ModeCard(
+                    icon: Icons.menu_book_outlined,
+                    label: '학습하기',
+                    onTap: () {
+                      context.push('/categories/$fieldSlug/${PracticeMode.study.pathValue}');
+                    },
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _ModeCard(
+                    icon: Icons.edit_outlined,
+                    label: '문제풀기',
+                    onTap: () {
+                      context.push('/categories/$fieldSlug/${PracticeMode.practice.pathValue}');
+                    },
+                  ),
+                ),
+              ],
+            ),
           );
         },
+      ),
+    );
+  }
+}
+
+class _ModeCard extends StatelessWidget {
+  const _ModeCard({required this.icon, required this.label, required this.onTap});
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: SizedBox(
+          height: 160,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, color: colorScheme.primary, size: 32),
+                const SizedBox(height: 12),
+                Text(
+                  label,
+                  style: Theme.of(context).textTheme.titleMedium,
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

@@ -39,8 +39,8 @@
   - Anthropic/OpenAI 어댑터가 `LlmProvider` 인터페이스로 구현되고 `factory.ts`가 `LLM_PROVIDER` 값에 따라 올바른 어댑터를 선택하며, 벤더별 요청 형식·스트리밍 이벤트 파싱은 단위 테스트로 검증됨
   - 실제 벤더 API 호출을 통한 종단 스트리밍 검증(iOS에서 실제 LLM 응답으로 면접 대화)은 API 키 확보 후 별도 후속 작업
 
-## M4. OAuth 회원가입
-- Supabase Auth에 **Google / GitHub** 설정 (Apple/Kakao는 M4 이후 후속 작업)
+## M4. OAuth 회원가입 (Google + GitHub)
+- Supabase Auth에 **Google / GitHub** 설정
 - 로그인 화면 — Google: Android/iOS는 네이티브 `google_sign_in` + `signInWithIdToken()`, Web은 `signInWithOAuth()` 리다이렉트 / GitHub: 전 플랫폼 `signInWithOAuth()` 리다이렉트
 - 기기의 **오답노트·이력서만 DB로 업로드** (자동, 확인 화면 없음) — 면접 대화는 제외 (재현 가치 대비 작업량 크다)
 - 업로드 정책: 오답노트는 `unique(user_id, question_id)` 기준 중복 무시 병합, 이력서는 서버 우선(기존이면 업로드 안 함), 성공한 항목만 로컬 삭제(실패 시 로컬 보존 후 재시도 가능)
@@ -48,6 +48,30 @@
 - `interview-chat`에 회원 경로 추가 (JWT, `increment_daily_usage`, DB 이력 사용, `interview_messages` 저장)
 - 회원은 `free` 한도 적용
 - 완료 기준: 비회원 때 쌓은 오답노트·이력서가 가입 후 계정에 남아 있고, 다른 계정 데이터는 보이지 않음
+
+## M4 이후 후속: Apple/Kakao OAuth 추가 + 홈 카드 아이콘 구현 + 딥링크 등록
+- **Apple 로그인** (M4의 Google/GitHub에 추가)
+  - iOS: 네이티브 `sign_in_with_apple` SDK로 ID 토큰 + nonce → `signInWithIdToken()`
+  - Web/Android: Supabase `signInWithOAuth(OAuthProvider.apple)` 리다이렉트
+  - Services ID와 .p8 키 파일 확보 필요 (Apple Developer Program)
+  - Client secret JWT는 6개월 주기 갱신
+- **Kakao 로그인** (전 플랫폼 통일)
+  - 네이티브 SDK 미사용, 전 플랫폼 `signInWithOAuth(OAuthProvider.kakao)` 리다이렉트
+  - 이메일 동의항목이 Biz App 전용이므로 **현재는 이메일 없이 가입 허용** (Supabase 설정)
+  - 최종 확정은 출시 후 사용자 데이터로 재검토
+- **홈 분야 카드 UI**
+  - 각 분야 카드의 아이콘: `category.slug` → `IconData` 매핑 (DB 컬럼 추가 없음)
+  - 분야 추가 시마다 앱 코드 매핑 업데이트 후 배포 필요
+  - 트레이드오프: 분야를 어드민이 자유롭게 추가할 수 없음 (개발팀 배포 필요)
+- **딥링크 등록**
+  - iOS: `CFBundleURLTypes`에 커스텀 스킴 등록 (확정 전)
+  - Android: intent-filter에 커스텀 스킴 등록 (확정 전)
+  - 스킴 값(reverse-domain 형식)은 이번 작업(Apple/Kakao 로그인) 계획 단계에서 확정
+- **LLM API 키 연결**
+  - LLM 키는 Supabase secrets에만 저장 (`supabase secrets set`)
+  - `LLM_PROVIDER`/`LLM_MODEL` env var 사용
+  - 웹 버전에서 모의면접 화면 간단히 확인 가능하게 (구체 범위는 계획에서 확정)
+- 완료 기준: Apple/Kakao 로그인이 동작하고, 홈 화면에 분야 아이콘이 표시되며, 딥링크로 앱 호출 가능, LLM 어댑터가 실제 API 키로 스트리밍 응답
 
 ## M5-a. 어드민 웹앱 + 수동 콘텐츠 관리
 - Vite + React + TypeScript 초기화, Tailwind v4 + shadcn/ui, 경로 별칭 `@/*` 설정

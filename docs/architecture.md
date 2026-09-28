@@ -3,7 +3,7 @@
 ## 기술 스택
 
 - **앱**: Flutter (Android / iOS / Web), Riverpod(상태관리), go_router(라우팅)
-- **백엔드**: Supabase — Postgres(+pgvector), Auth(OAuth: Google/GitHub, Apple/Kakao는 추후), Edge Functions(Deno)
+- **백엔드**: Supabase — Postgres(+pgvector), Auth(OAuth: Google/GitHub/Apple/Kakao), Edge Functions(Deno)
 - **LLM**: Anthropic / OpenAI — Edge Function 내부 어댑터로 교체 가능 (`LLM_PROVIDER` env var)
 - **PDF 추출**: Vercel Node 서버리스 함수 (`unpdf` 라이브러리, `api/parse-pdf.ts`, 같은 Vercel 프로젝트에서 Flutter 웹과 함께 배포)
 - **어드민**: 별도 웹앱, Vite + React + TypeScript, Tailwind v4 + shadcn/ui (M5-a). 로그인은 고정 관리자 계정 + 비밀번호 전용 화면(`signInWithPassword` 내부 호출, ADR-016)
@@ -52,6 +52,8 @@ admin/                 Vite+React 어드민 웹앱 (M5-a), 별도 Vercel 프로�
 - **LLM 어댑터**: `LlmProvider` 인터페이스(`streamChat`) + `AnthropicProvider` / `OpenAiProvider`, `factory.ts`가 env var로 선택. Flutter 클라이언트는 `interview-chat`을 `package:http`로 Function URL에 직접 POST해 스트림을 수동 파싱한다 (`supabase_flutter`의 `functions.invoke`는 스트리밍 미지원).
 - **콘텐츠 쓰기는 앱에서 불가, 어드민에서만**: `categories` / `questions`는 일반 사용자에게 공개 읽기 전용(RLS `..._public_select`, `questions`는 `is_published=true`만). 쓰기와 미게시 조회는 `profiles.is_admin=true`인 어드민 RLS 정책으로만 허용한다(M5-a). 새 문제는 어드민 직접 작성 또는 승인 흐름(`question_candidates` → `approve_question_candidate` RPC → `questions`) 두 경로로 들어가며, 같은 에디터 폼을 공유한다. M5-a 이전에는 SQL 시드로만 넣었다.
 - **권한은 명시적으로**: 프로젝트 설정상 새 테이블이 Data API에 자동 노출되지 않고 RLS가 자동으로 켜진다. 마이그레이션마다 `GRANT`와 RLS 정책(공개 테이블의 select 포함)을 직접 작성한다.
+- **홈 분야 카드 아이콘**: 각 분야의 아이콘은 `categories.slug` → `IconData` 매핑을 Flutter 앱 코드에서만 처리한다. DB 컬럼 추가 없음. 새 분야 추가 시마다 앱 매핑 코드를 업데이트하고 배포해야 한다.
+- **딥링크**: iOS는 `CFBundleURLTypes`, Android는 intent-filter에 커스텀 스킴(reverse-domain 형식)을 등록하고, 앱에서 `go_router`의 deep link 처리로 대응한다. 스킴 값은 이번 작업(Apple/Kakao 로그인) 계획 단계에서 확정한다.
 
 ## 데이터 모델
 

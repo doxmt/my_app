@@ -135,7 +135,7 @@
 ## ADR-014: M4 — OAuth 제공자 범위, 데이터 이전 대상, 플랫폼별 로그인 방식
 
 **날짜:** 2026-09-18
-결정: (1) M4에서 Supabase Auth의 OAuth 제공자는 **Google + GitHub만** 지원한다. Apple은 Apple Developer Program 유료 가입($99/년)이 필요해 제외하고, Kakao는 Supabase 기본 지원이 확인됐으나(Kakao Developers 콘솔 등록 + Consent Items 설정 필요) 범위 조정 차원에서 M4 이후 후속 작업으로 미룬다. (2) 회원가입 시 로컬에서 DB로 이전하는 데이터는 **오답노트 + 이력서만**이다. 면접 대화(`interview_sessions`, `interview_messages`)는 이전하지 않는다. 이전 정책: 오답노트는 `unique(user_id, question_id)` 기준으로 서버와 로컬의 중복을 무시하고 병합, 이력서는 서버에 이미 있으면 로컬을 올리지 않음(서버 우선), 성공한 항목만 로컬에서 삭제하고 실패 시 로컬을 보존해 재시도 가능하게 한다. (3) Google 로그인은 플랫폼별로 구분한다 — Android/iOS는 네이티브 `google_sign_in` 7.x(싱글턴 `GoogleSignIn.instance` + `initialize()`)로 ID 토큰을 얻어 `signInWithIdToken()`을 호출하고, Web은 `signInWithOAuth()` 리다이렉트를 쓴다. GitHub는 네이티브 SDK가 없어 전 플랫폼에서 `signInWithOAuth()` 리다이렉트로 통일한다.
+결정: (1) M4에서 Supabase Auth의 OAuth 제공자는 **Google + GitHub만** 지원한다. Apple은 Apple Developer Program 유료 가입($99/년)이 필요해 제외하고, Kakao는 Supabase 기본 지원이 확인됐으나(Kakao Developers 콘솔 등록 + Consent Items 설정 필요) 범위 조정 차원에서 M4 이후 후속 작업으로 미룬다. **(후속: ADR-018에서 해소)** (2) 회원가입 시 로컬에서 DB로 이전하는 데이터는 **오답노트 + 이력서만**이다. 면접 대화(`interview_sessions`, `interview_messages`)는 이전하지 않는다. 이전 정책: 오답노트는 `unique(user_id, question_id)` 기준으로 서버와 로컬의 중복을 무시하고 병합, 이력서는 서버에 이미 있으면 로컬을 올리지 않음(서버 우선), 성공한 항목만 로컬에서 삭제하고 실패 시 로컬을 보존해 재시도 가능하게 한다. (3) Google 로그인은 플랫폼별로 구분한다 — Android/iOS는 네이티브 `google_sign_in` 7.x(싱글턴 `GoogleSignIn.instance` + `initialize()`)로 ID 토큰을 얻어 `signInWithIdToken()`을 호출하고, Web은 `signInWithOAuth()` 리다이렉트를 쓴다. GitHub는 네이티브 SDK가 없어 전 플랫폼에서 `signInWithOAuth()` 리다이렉트로 통일한다.
 이유: (1) Apple의 개발자 계정 비용은 선행 부담이고 Kakao는 이미 Supabase 지원이 확인되어 M4 범위를 먼저 Google/GitHub로 한정해 빠르게 검증한다. (2) 면접 대화는 비회원 때 사용한 임시 정보로 재현 가치가 낮고, 이전 작업(두 테이블 쓰기 + 메시지 순서·역할 매핑 검증)이 크다. 대신 이력서와 오답노트는 학습 기록의 핵심이라 반드시 이전한다. (3) Google 네이티브 SDK는 지원하는 플랫폼에서 UX가 낫고(싱글 탭 로그인, 계정 선택 UI 등), GitHub는 애초에 네이티브 SDK가 없어 웹뷰 리다이렉트만 가능하다. 네이티브/웹 섞기보다 각 제공자별로 최적 방식을 고른다.
 대안: (1) Apple을 M4에 포함하기(비용 선처리), Kakao를 포함하기. (2) 면접 대화까지 이전하기. (3) Google을 전 플랫폼에서 리다이렉트로 통일하기(구현 단순, UX 하락).
 트레이드오프: (1) Apple/Kakao 없이 출시하면 출시 후 사용자 요청에 따라 급하게 추가해야 할 수 있다(특히 Apple은 iOS 앱스토어에서 소셜 로그인을 제공하면 Apple 로그인도 지원해야 한다는 정책이 있을 수 있음). (2) 면접 대화를 이전하지 않으면 비회원 때 쌓은 대화가 계정 전환 후 사라진다. (3) Google을 리다이렉트로 통일하면 모바일에서 여러 창이 오가며 UX가 저하된다.
@@ -169,3 +169,14 @@
 이유: 현재 문제 콘텐츠는 CS·프론트엔드 2개 분야 12문제뿐이고, 추가 수단이 SQL 시드밖에 없다. M5-a의 "관리자 수동 입력" 기능으로 이 병목을 즉시 해소할 수 있다. 어드민 웹앱과 승인 UI는 API 키 없이도 완전히 구현 가능하고, LLM·임베딩 호출은 이후 키 확보 후 별도 작업으로 진행할 수 있다.
 대안: M5 전체를 한 번에 (LLM 없이 임시로라도 콘텐츠를 하드코딩해가며 구현), M5를 M5-a(앱) / M5-b(어드민 + 파이프라인)로 분할(어드민 없이 시작하는 이상하기).
 트레이드오프: 어드민 웹앱이 먼저 배포되므로 초기에는 후보 승인 UI가 비어 있다(M5-b 시작 전까지). M5-a 완료 후 LLM 키를 얻을 때까지의 시간이 불확실하다(키 확보까지는 M5-b를 시작할 수 없다).
+
+---
+
+## ADR-018: Apple/Kakao OAuth 추가와 홈 카드 아이콘 방식
+
+**날짜:** 2026-09-21
+결정: (1) **Apple 로그인**: iOS는 네이티브 `sign_in_with_apple` SDK로 ID 토큰 + nonce를 얻어 `signInWithIdToken()`을 호출한다. Web과 Android는 Supabase의 `signInWithOAuth(OAuthProvider.apple)` 리다이렉트를 쓴다. 이를 위해 Apple Developer Program 계정(기존)의 Services ID와 .p8 키 파일이 필요하며, client secret JWT는 개발팀이 6개월 주기로 갱신한다. (2) **Kakao 로그인**: 네이티브 SDK 미사용, 전 플랫폼(iOS/Android/Web)에서 `signInWithOAuth(OAuthProvider.kakao)` 리다이렉트로 통일한다. Kakao는 이메일 동의항목이 Biz App 전용이라 **현재는 이메일 없이 가입을 허용**한다(Supabase 설정: "Allow users without an email"). 최종 확정은 계획 단계의 Open Question이므로 향후 검토 시 다시 결정한다. (3) **딥링크**: iOS는 `CFBundleURLTypes`에 커스텀 스킴을 등록하고, Android는 intent-filter에 등록한다. 스킴 값(reverse-domain 형식)은 계획 단계에서 확정 예정이므로 이 문서에서는 "확정 전"으로 표기한다. (4) **홈 분야 카드 UI**: 각 분야 카드의 아이콘은 DB에 컬럼을 추가하지 않고 Flutter 앱 코드에서 `category.slug` → `IconData` 매핑으로만 처리한다. 분야가 추가될 때마다 앱의 매핑 코드를 업데이트하고 배포해야 한다.
+이유: (1) App Store 정책 4.8에 따라 다른 소셜 로그인을 제공하면 Apple 로그인도 지원해야 한다. iOS 사용자 경험을 위해 네이티브 SDK를 쓰되, Web/Android는 이미 Supabase가 지원하는 OAuth 리다이렉트로 통일한다. (2) Kakao는 Supabase에서 기본 지원되어 있고, 이메일 미필수 가입은 "Supabase Allow users without an email" 설정으로 간단히 해결된다. 최종 이메일 요건은 사용자 피드백 수집 후 M5-a 이후 마일스톤에서 재검토한다. (3) 딥링크는 표준화된 기능으로, 앱 호출 흐름에서는 필요하지만 현재 프로토타입 단계에서는 구체 값을 확정할 필요가 없다. (4) DB에 아이콘 컬럼을 추가하면 마이그레이션이 필요하고 각 분야에 값을 입력해야 하는데, 아이콘 선택은 디자인 결정이라 여러 번 바뀔 가능성이 높다. 앱 코드 매핑은 유연하고 변경 시 앱 배포만으로 즉시 반영된다.
+대안: (1) Apple을 M4에 포함하면서 비용 선처리, Kakao 미지원, Kakao를 이메일 필수로 운영하기. (2) 딥링크 스킴을 미리 확정하고 등록하기. (3) 아이콘을 DB 컬럼(`icon_slug`)으로 저장하고 프론트에서 이를 조회해 매핑하기. (4) 아이콘 SVG를 모두 앱에 번들로 포함하기.
+트레이드오프: (1) iOS와 Web/Android가 다른 로그인 흐름을 쓰므로 로그인 코드에서 플랫폼 분기가 필요하다. Apple의 client secret JWT는 6개월마다 갱신해야 하는 운영 비용이 생긴다. (2) 이메일 없는 계정은 향후 이메일 기반 기능(복구, 알림 등)을 추가할 때 추가 처리가 필요할 수 있다. (3) 딥링크 스킴을 미리 확정하지 않으면 향후 마케팅/분석 추적에서 지연이 생긴다. (4) 아이콘 매핑을 앱 코드에 두면 새 분야 추가 시마다 앱을 배포해야 한다(분야를 어드민이 자유롭게 추가할 수 없음).
+후속: ADR-014의 "M4 이후 후속"이었던 Apple/Kakao 지원을 이 결정으로 해소한다. 딥링크 스킴 값은 이번 작업(Apple/Kakao 로그인) 계획 단계에서 확정하고, 그때 iOS/Android 매니페스트를 업데이트한다. Kakao 이메일 요건도 출시 후 사용자 데이터로 재평가한다.
