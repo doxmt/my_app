@@ -54,13 +54,19 @@ class TopicListPage extends ConsumerWidget {
               if (topics.isEmpty) {
                 return const Center(child: Text('아직 등록된 주제가 없습니다.'));
               }
-              return ListView.builder(
+              return GridView.builder(
+                padding: const EdgeInsets.all(16),
+                gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                  maxCrossAxisExtent: 220,
+                  mainAxisExtent: 140,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                ),
                 itemCount: topics.length,
                 itemBuilder: (context, index) {
                   final topic = topics[index];
-                  return ListTile(
-                    title: Text(topic.name),
-                    trailing: const Icon(Icons.chevron_right),
+                  return _TopicCard(
+                    label: topic.name,
                     onTap: () {
                       context.push('/categories/$fieldSlug/${mode.pathValue}/${topic.slug}');
                     },
@@ -70,6 +76,42 @@ class TopicListPage extends ConsumerWidget {
             },
           );
         },
+      ),
+    );
+  }
+}
+
+class _TopicCard extends StatelessWidget {
+  const _TopicCard({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.topic_outlined, color: colorScheme.primary, size: 32),
+              const SizedBox(height: 12),
+              Text(
+                label,
+                style: Theme.of(context).textTheme.titleMedium,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
