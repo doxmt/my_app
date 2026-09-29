@@ -69,7 +69,7 @@
 | 변경 직후 | Root Directory는 프로젝트 전체 설정이라 **바꾸는 순간부터 develop push의 Preview는 Next(`webapp/`)만 빌드**한다. Flutter 웹 Preview는 사라진다. 이미 배포된 Production(기존 Flutter 웹 빌드)은 다음 Production 배포가 있기 전까지 그대로 서비스된다 |
 | 컷오버 | develop → main 릴리즈 push. **그 전까지 `main`에 푸시하면 안 된다**(푸시하는 순간 Next가 Production이 된다) |
 | PDF 함수 | 루트 `api/parse-pdf.ts`는 Root Directory 밖이 되어 새 빌드에서 사라진다. 대신 같은 도메인의 `webapp/app/api/parse-pdf/route.ts`(Route Handler)가 같은 경로 `/api/parse-pdf`로 응답한다. 모바일 앱은 컷오버 후 이 엔드포인트를 쓴다. 도메인이 유지되면 `PDF_PARSE_BASE_URL` 값 변경은 필요 없다(도메인이 바뀌면 그때 바꾼다). Route Handler는 raw 바이트 본문(`application/octet-stream`)을 받아 모바일 클라이언트 요청 형식과 응답 형식이 동일하다 |
-| 루트 파일 | 루트 `vercel.json`(installCommand/buildCommand/outputDirectory/SPA rewrite)은 Root Directory가 `webapp/`이 되면 **무시된다**. 루트 `scripts/vercel-build.sh`, 루트 `api/parse-pdf.ts`, 루트 `vercel.json`은 이번 작업에서 수정·삭제하지 않는다(정리는 후속). `webapp/`은 Next 기본 설정으로 충분하므로 자체 `vercel.json`을 만들지 않는다 |
+| 루트 파일 | 루트 `vercel.json`(installCommand/buildCommand/outputDirectory/SPA rewrite)은 Root Directory가 `webapp/`이 되어도 **여전히 적용된다**(2026-09-29 Preview 빌드 실패로 확인: `bash scripts/vercel-build.sh` 실행 시도). 그래서 `webapp/vercel.json`(framework/installCommand/buildCommand)으로 덮어쓴다. 루트 `scripts/vercel-build.sh`, 루트 `api/parse-pdf.ts`, 루트 `vercel.json`은 이번 작업에서 수정·삭제하지 않는다(정리는 후속). `webapp/vercel.json`을 둔다 |
 | Ignored Build Step | 프로젝트가 하나(루트 프로젝트 = `webapp/`)이므로 이 작업을 위한 새 설정은 없다. 기존 값이 있으면 Root Directory 변경 후에도 의도대로 동작하는지 확인하고, `admin/` 프로젝트 쪽 Ignored Build Step(`webapp/` 변경은 스킵)은 필요 시 조정 |
 | 되돌리기 | Root Directory를 비우고(루트로 복귀) 재배포하면 Flutter 웹 빌드로 돌아간다 |
 
@@ -92,7 +92,7 @@
 **절대 금지**
 - `categories`/`questions`에 앱에서 쓰기, 콘텐츠를 SQL 마이그레이션으로 추가.
 - 컷오버(develop → main 릴리즈 push) 전에 `main`에 푸시하는 것 — Root Directory가 `webapp/`인 상태에서 main push는 곧 Next 배포다.
-- 루트 `api/parse-pdf.ts`, `scripts/vercel-build.sh`, 루트 `vercel.json` 삭제·수정 — 이번 작업 범위 밖(정리는 후속). Root Directory 변경 후에는 빌드에서 쓰이지 않는다.
+- 루트 `api/parse-pdf.ts`, `scripts/vercel-build.sh`, 루트 `vercel.json` 삭제·수정 — 이번 작업 범위 밖(정리는 후속). 루트 `vercel.json`은 `webapp/vercel.json`이 덮어쓴다.
 - Flutter 코드(`lib/`) 변경 — 0단계 되돌리기와 6단계의 `PDF_PARSE_BASE_URL` 값 변경 외에는 없음.
 - PDF 텍스트 추출을 브라우저나 Edge Function에서 하기.
 - 공개 페이지 SSG/ISR, SEO 메타 작업(범위 밖, 추후 옵션).
