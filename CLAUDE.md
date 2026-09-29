@@ -25,7 +25,7 @@
 - 사용자용 웹은 컷오버 후 Flutter가 아닌 `webapp/`의 Next.js 앱이다 (ADR-019, M6). Android/iOS만 Flutter다. 웹과 Flutter 앱은 URL 경로와 비회원 저장 형식(localStorage/`shared_preferences`의 `{ version: 1, items }`)을 맞춰 둔다.
 - 웹 클라이언트는 `interview-chat` Edge Function을 브라우저에서 직접 호출한다. Next 서버(Route Handler/Server Action)로 프록시하지 않는다 — 모든 요청이 Vercel IP로 잡혀 `guest_ip` 한도가 무너진다. Next 서버에도 LLM 호출·키를 두지 않는다.
 - 웹 SSE 파서는 `response.body.getReader()` 루프로 쓴다(ReadableStream async iteration 미사용, Safari 호환). Safari 스트리밍 실측 결과와 브라우저별 특이사항은 확인되는 대로 여기에 한 줄씩 추가한다 (현재 미실측).
-- Vercel: 기존 루트 프로젝트의 Root Directory가 `webapp/`이다(변경 후 루트 `vercel.json`·`scripts/vercel-build.sh`·`api/`는 빌드에서 쓰이지 않음). 컷오버(develop → main 릴리즈) 전에는 `main`에 푸시하지 않는다.
+- Vercel: 기존 루트 프로젝트의 Root Directory가 `webapp/`이다(변경 후에도 루트 `vercel.json`은 적용되어 Flutter 빌드 설정이 새므로 `webapp/vercel.json`이 이를 덮어쓴다. `scripts/vercel-build.sh`·루트 `api/`는 빌드에서 쓰이지 않음). 컷오버(develop → main 릴리즈) 전에는 `main`에 푸시하지 않는다.
 - 대상 플랫폼은 Android/iOS/Web뿐이다. 데스크톱 플랫폼 폴더를 다시 만들지 않는다.
 - 플랫폼별 동작 차이(웹 전용 제약, 플러그인 미지원 등)가 생기면 여기에 추가한다.
 
