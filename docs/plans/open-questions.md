@@ -66,9 +66,39 @@
 - [x] **딥링크 스킴 값 확정** — **확정(2026-09-21): `com.doxmt.devinterview://login-callback`.** 이전 검토: reverse-domain 형식 권장. 번들 ID를 유지할 경우 **추천 기본값: `com.example.myapp://login-callback`** (iOS 스킴은 소문자 통일). 번들 ID를 바꾸면 그 값에 맞춘다. Supabase Additional Redirect URLs · `Info.plist` · `AndroidManifest.xml` · `AUTH_REDIRECT_URL` 네 곳이 같은 값이어야 한다
 - [ ] **Kakao 이메일 필수 여부** — `account_email` 동의항목은 Biz App 전용. **추천 기본값(잠정 확정): 이메일 없이 가입 허용** (Supabase "Allow users without an email"). 출시 후 이메일 기반 기능(복구·알림)이 필요해지면 Biz App 전환 여부를 재평가 (ADR-018)
 - [ ] **LLM 벤더 확정** — 코드 기본값은 `LLM_PROVIDER=anthropic`, 기본 모델 `claude-sonnet-5`. **추천 기본값: 코드 기본값 그대로 두고 Anthropic 키만 등록** (OpenAI는 크레딧 충전이 추가로 필요). 비용/품질 비교는 실사용 후
-- [ ] **Flutter Web에서 SSE 스트리밍이 실제로 청크 단위로 도착하는지** — `package:http`는 브라우저 XHR 위에서 동작해 응답이 버퍼링될 수 있다. 버퍼링되면 웹 전용 fetch/`ReadableStream` 경로가 필요한데, 이번 작업(5단계)에서 고칠지 M6로 넘길지 검증 결과를 보고 결정
+- [x] **Flutter Web에서 SSE 스트리밍이 실제로 청크 단위로 도착하는지** — 문서 조사로 해소(2026-09-28): `package:http` 1.3.0부터 `BrowserClient`가 XHR → **Fetch API**로 바뀌어 응답 스트리밍이 기본 동작한다. 프로젝트는 `http: 1.6.0`을 쓰므로 **코드 변경 불필요**(제약은 요청 업로드 스트리밍에만 있고 이 프로젝트는 일반 POST). 실측 확인은 `web-responsive-layout` 계획 1단계에서 수행
 - [ ] **임베딩 API 키** — M5-b(콘텐츠 파이프라인) 몫. 이번 작업 범위 아님
 - [ ] **회원 면접 세션이 `completed`로 전환되지 않는 문제** — 별도 이슈로 분리. 이번 PR에서 다루지 않음
 - [ ] **동일 이메일로 다른 provider 가입 시 계정 병합** — Supabase 기본 동작(이메일 일치 시 자동 링크 여부)을 그대로 두고 별도 처리하지 않는다. Kakao는 이메일이 없어 항상 별도 계정이 된다는 점만 인지
 - [ ] **Apple 이름 미제공 처리** — Apple은 최초 로그인에만 이름을 준다. 네이티브 흐름에서 `raw_user_meta_data`에 이름이 안 들어오면 표시명이 빈다. **추천 기본값: 빈 표시명을 허용하고 `updateUser` 저장은 하지 않음**(범위 최소화). 2단계 검증 결과에 따라 재검토
 - [ ] **Apple client secret JWT 6개월 갱신 운영** — 만료 시 Apple 로그인 전면 실패. 갱신 알림을 어디에(캘린더 / GitHub 이슈) 남길지 미정
+
+## 웹 버전 만들기 — 반응형 레이아웃 - 2026-09-28
+
+> **Next 웹 전환으로 대체됨 (2026-09-29).** #23 폐기. 아래 미해결 항목은 이 절에서 더 다루지 않는다 — M6 잔여 항목은 M7로, 웹 스모크·PDF·OAuth 웹 검증은 "Next.js 웹 전환 - 2026-09-29" 절로 넘어간다.
+
+- [x] **작업 범위 해석** — 확정(2026-09-28): M6의 "웹 전용 레이아웃"(NavigationRail + 본문 폭 제한)을 당겨서 하는 반응형 작업이 맞다
+- [x] **스모크에서 동작 버그 발견 시** — 확정(2026-09-28): 이번 작업 범위에 수리 포함. 단 반응형 레이아웃을 크게 벗어나면 사용자에게 보고 후 분리
+- [x] **M6 범위** — 확정(2026-09-28): 웹 레이아웃만. 로딩/에러/빈 상태·오프라인·접근성은 별도 후속
+- [x] **breakpoint 기준값** — 확정(2026-09-28): Material 3 공식 window size class 기준 **600dp 단일 breakpoint**(<600 하단 탭 / ≥600 NavigationRail), 본문 최대 폭 840dp. `flutter_adaptive_scaffold`는 자체 기본값(700/1000/…)을 쓰고 pubspec에도 없어 미채택, `LayoutBuilder`로 직접 구현
+- [x] **로그인 화면 넓은 화면 대응** — 확정(2026-09-28): `login_page.dart`에 이미 `ConstrainedBox(maxWidth: 360)`가 있어 추가 작업 불필요. 1단계 스모크에서 눈으로 재확인만
+- [ ] **본문 최대 폭 840dp가 실제로 적절한지** — 서술형 문제 본문·면접 채팅은 줄 길이가 길어 더 좁은 값(720dp)이 읽기 좋을 수 있다. 2단계 구현 후 Chrome에서 눈으로 확정
+- [ ] **M6 잔여 항목(로딩·에러·빈 상태, 오프라인, 접근성) 착수 시점** — 이번 작업에서 빠졌다. 출시 전 별도 작업으로 언제 할지 미정
+- [ ] **PDF 업로드·OAuth 리다이렉트가 웹에서 깨질 경우의 처리** — 1단계 스모크 결과에 달려 있다. 원인이 웹 전용 제약이면 이번 범위, 기존 결함이면 별도 작업으로 뺄지 결과를 보고 판단
+
+## Next.js 웹 전환 - 2026-09-29
+
+- [x] **Next를 택한 이유와 SEO 범위** — 확정(2026-09-29): React/Next 생태계 선호. SEO는 목표가 아니며 공개 페이지 SSG/ISR은 범위 밖(추후 옵션)
+- [x] **범위와 전환 방식** — 확정(2026-09-29): 전 기능 동등(문제풀이·오답노트·이력서·면접·OAuth 4종·로컬→DB 이전) 후 한 번에 컷오버. 그때까지 Production은 Flutter 웹
+- [x] **로드맵 배치** — 확정(2026-09-29): 새 M6 "Next.js 웹 전환", 기존 M6 폴리시/QA는 M7. M5-b는 독립 트랙
+- [x] **#23 처리** — 확정(2026-09-29): 전부 폐기, 이슈 닫음 (계획 0단계)
+- [ ] **Vercel 구조** — A(기존 프로젝트 Root Directory를 `webapp/`로 변경) vs B(새 프로젝트 병행 후 컷오버). **추천: B** — 전환 전 Flutter Production과 모바일 PDF 엔드포인트를 설정 수준에서 보호하고 즉시 복귀가 가능하다
+- [ ] **설치된 구버전 모바일 앱 존재 여부** — 없으면 컷오버 때 `PDF_PARSE_BASE_URL`만 새 도메인으로 바꾸면 된다. 있으면 구 도메인 `api/parse-pdf`를 계속 유지해야 한다
+- [ ] **Flutter 웹 빌드 경로 정리 시점** — 루트 `vercel.json`, `scripts/vercel-build.sh`, 루트 `api/`, Flutter `web/` 폴더, 기존 Vercel 프로젝트. 추천: 컷오버 안정화 후 별도 PR
+- [ ] **iOS Safari에서 SSE가 멈출 경우 대응** — 비스트리밍 폴백(범위 확대) vs 알려진 제약으로 문서화. 4단계 실측 후 결정
+- [ ] **탭별 화면 상태 보존** — Flutter `indexedStack` 동작을 Next에서 재현할지. 추천: 동등성 범위에서 제외
+- [ ] **PR 단위** — 단계별 PR vs 기능 브랜치 하나. 추천: 단계별 PR
+- [ ] **PR 요약 댓글의 프로젝트 구분** — Vercel 프로젝트가 3개가 되면 `pr-summary.js`가 배포 결과를 구분하지 못할 수 있다. 추천: 실제 문제가 생길 때만 수정
+- [ ] **기존 Flutter 웹 비회원 데이터 이어받기** — 오리진이 바뀌면 읽을 수 없다. 추천: 출시 전이므로 이어받지 않음
+- [ ] **Supabase Redirect URL Preview 패턴** — 새 프로젝트 Preview 호스트 형태에 맞는 와일드카드를 5단계 실측으로 확정
+- [ ] **PDF Route Handler `maxDuration` 설정 문법** — 4단계 구현 시 Vercel 공식 문서로 확인
