@@ -14,7 +14,7 @@
 - 최초 실행 시 기기 ID 생성·보관
 - Supabase URL/publishable key는 `String.fromEnvironment`로 읽음 (로컬은 `--dart-define-from-file=env/dev.json`, Vercel은 환경변수로 `--dart-define` 전달)
 - 하단 탭 3개: 홈(`/`, 분야 목록) · 모의면접(`/interview`) · 내 정보(`/me`, 오답노트는 `/me/wrong-notes`). 홈 외에는 빈 화면
-- 화면은 모바일 레이아웃 기준. 웹은 빌드·배포·path URL만 유지하고 웹 전용 레이아웃은 M6
+- 화면은 모바일 레이아웃 기준. 웹은 빌드·배포·path URL만 유지하고 웹 전용 레이아웃은 M6(Next.js 웹 전환으로 흡수, ADR-019)
 - 완료 기준: 세 플랫폼에서 앱이 뜨고, 로그인 없이 카테고리 목록이 Supabase에서 조회됨(빈 상태 포함)
 
 ## M2. 카테고리/문제풀이 + 로컬 오답노트
@@ -89,9 +89,18 @@
 - 같은 파이프라인을 커맨드로도 실행 가능하게
 - 완료 기준: 중복 후보에 `duplicate_of`가 채워지고, 승인한 문제가 앱에 바로 보임
 
-## M6. 폴리시/QA
-- 로딩·에러·빈 상태 정리, 오프라인 처리, 접근성
-- 웹 전용 레이아웃: 넓은 화면에서 NavigationRail, 본문 폭 제한 등 (ADR-010)
+## M6. Next.js 웹 전환
+- 웹 클라이언트를 Flutter 웹에서 `webapp/`의 Next.js 16 앱으로 교체 (ADR-019). Android/iOS는 Flutter 유지. 계획: `docs/plans/nextjs-web.md`
+- 전 기능 동등: 문제풀이(학습하기/문제풀기)·오답노트·이력서(텍스트/PDF)·모의면접(SSE)·OAuth 4종·로컬→DB 이전. URL 경로와 비회원 저장 형식(localStorage `{ version: 1, items }`)은 Flutter와 동일
+- 웹 전용 레이아웃(넓은 화면 좌측 내비 + 본문 폭 제한)은 이 마일스톤에 포함 (기존 M6의 항목을 흡수)
+- 면접은 브라우저가 `interview-chat`을 직접 호출(Next 서버 경유 금지), PDF 추출은 `webapp/app/api/parse-pdf` Route Handler
+- Vercel: 기존 루트 프로젝트의 Root Directory를 `webapp/`으로 변경(새 프로젝트 없음). 변경 후 develop Preview는 Next만 빌드, **컷오버(develop → main 릴리즈 push) 전에는 `main`에 push하지 않는다**
+- 완료 기준: Chrome · macOS Safari · iOS Safari · Android Chrome에서 Flutter 웹과 동등 기능 확인(면접 스트리밍이 점진 표시됨), 로그인 4종 성공, 컷오버 전후로 모바일 PDF 업로드가 끊기지 않음, CI(`test`/`admin`/`webapp`) 통과
+- 컷오버 후 별도 정리: Flutter 웹 빌드 경로(루트 `vercel.json`, `scripts/vercel-build.sh`, 루트 `api/parse-pdf.ts`, Flutter `web/`)
+
+## M7. 폴리시/QA
+- 로딩·에러·빈 상태 정리, 오프라인 처리, 접근성 (Flutter, Next 웹 모두)
+- (기존 M6의 "웹 전용 레이아웃" 항목은 새 M6 Next.js 웹 전환으로 흡수됨)
 - Android/iOS/Web 전체 여정 점검 (`CLAUDE.md` Definition of Done)
 - 발견한 플랫폼별 특이사항을 `CLAUDE.md` Non-Obvious Rules에 기록
 - 릴리즈 시 `main`에 push → Production 배포

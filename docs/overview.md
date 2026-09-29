@@ -24,11 +24,12 @@
 | 상태관리 | **Riverpod** | 비동기 호출·스트리밍 채팅을 `AsyncNotifier`/`StreamProvider`로 처리, 보일러플레이트 적음 |
 | 라우팅 | **go_router** | 웹 URL, 인증 가드 redirect |
 | 내비게이션 | **하단 탭 3개: 홈 · 모의면접 · 내 정보** | 홈에서 분야 → 학습 방식 → 주제로 들어간다. 오답노트·학습 기록·이력서는 내 정보 안에 둔다 (ADR-010) |
-| 화면 개발 순서 | **모바일 먼저, 웹 전용 레이아웃은 M6** | 모바일과 웹의 UI 차이가 커서 한 번에 맞추지 않는다. 웹 빌드·배포는 계속 유지한다 (ADR-010) |
+| 화면 개발 순서 | **모바일 먼저, 웹 전용 레이아웃은 M6(Next 웹)** | 모바일과 웹의 UI 차이가 커서 한 번에 맞추지 않는다. 웹 빌드·배포는 계속 유지한다 (ADR-010, ADR-019) |
+| 웹 클라이언트 | **Next.js 16 (`webapp/`)** — Android/iOS는 Flutter 유지 | React/Next 생태계 선호로 웹을 따로 만든다. 전 기능 동등, 동등 기능 완성 후 컷오버. 면접은 브라우저가 Edge Function 직접 호출, PDF는 Route Handler. Vercel은 기존 프로젝트의 Root Directory를 `webapp/`으로 변경 (ADR-019) |
 | LLM | **Anthropic + OpenAI, 어댑터로 교체 가능** | Edge Function 안에 `LlmProvider` 인터페이스 + 두 어댑터, `LLM_PROVIDER` env var로 선택 |
 | 비회원 처리 | **로그인 없음(익명 로그인도 안 씀). 데이터는 기기에만, 한도는 기기 ID + IP** | 사용자 요청: 비회원은 바로 사용. 서버에 비회원 데이터를 두지 않아 신뢰할 수 없는 기기 ID로 조회하는 경로가 없음. 기기 ID만으로는 앱 초기화로 한도가 풀려서 IP 한도를 함께 건다 |
 | OAuth | Google, Apple, GitHub, Kakao | M4는 Google/GitHub 구현, M4 이후 후속에서 Apple/Kakao 추가 (ADR-018) |
-| 이력서 추출 | 텍스트 붙여넣기 기본. PDF는 앱이 Vercel Node 함수(`unpdf`)로 직접 보내 텍스트만 받음, 원본 저장 안 함 | Deno엔 PDF 파서가 없고, 비회원은 Storage에 올릴 수 없음 |
+| 이력서 추출 | 텍스트 붙여넣기 기본. PDF는 앱/웹이 Vercel Node 함수(`unpdf`, 컷오버 후 `webapp`의 Route Handler)로 직접 보내 텍스트만 받음, 원본 저장 안 함 | Deno엔 PDF 파서가 없고, 비회원은 Storage에 올릴 수 없음 |
 | 결제 | 미구현. `profiles.plan_tier`, `stripe_customer_id`(nullable)만 추가 | 나중에 마이그레이션 없이 붙이기 위해 |
 | 어드민 | **React 웹앱**, 별도 배포, 같은 Supabase 프로젝트 | 내부 도구라 Flutter일 필요 없음 |
 | 콘텐츠 수집 | 자료 수집 → AI 초안 → 임베딩 중복 비교 → 승인 → 게시. 어드민 버튼 또는 커맨드로 실행 | 사용자가 자동화를 원함 |
@@ -144,6 +145,7 @@ supabase/
     content-pipeline/   수집→초안→중복비교 (M5)
 
 admin/            React 어드민 웹앱 (M5)
+webapp/           Next.js 웹 클라이언트 (M6, ADR-019)
 ```
 각 feature는 `data/domain/presentation` 3계층. 리포지토리는 로컬 구현과 Supabase 구현을 두고 로그인 여부로 선택.
 
@@ -160,7 +162,8 @@ admin/            React 어드민 웹앱 (M5)
 - **M4. OAuth 회원가입** — Google/GitHub 로그인, 기기 데이터 DB 업로드, `interview-chat` 회원 경로, `increment_daily_usage` RPC 추가, `free` 한도 적용. 완료 기준: 비회원 기록이 가입 후 계정에 남고 타인 데이터는 안 보임
 - **M4 이후 후속. Apple/Kakao OAuth + 홈 카드 UI + 딥링크 + LLM 키 연결** — Apple 로그인(iOS 네이티브 또는 웹/Android 리다이렉트), Kakao 로그인(전 플랫폼 리다이렉트), 홈 분야 카드 아이콘(`slug → IconData` 매핑), 딥링크 등록(iOS/Android), LLM API 키 Supabase secrets 저장 및 `LLM_PROVIDER`/`LLM_MODEL` env var 연결. 완료 기준: Apple/Kakao로 로그인 가능, 홈 화면에 분야 아이콘 표시, 딥링크로 앱 호출 가능, LLM 어댑터가 실제 API 키로 작동
 - **M5. 어드민 + 콘텐츠 자동화** — React 어드민(별도 배포, `is_admin`), `content-pipeline`, 후보 검토·승인 UI, 커맨드 실행 지원. 완료 기준: 중복 후보에 `duplicate_of`, 승인 문제가 앱에 바로 노출
-- **M6. 폴리시/QA** — 로딩·에러·빈 상태, 3개 플랫폼 전체 여정 점검, 플랫폼별 특이사항을 `CLAUDE.md`에 기록, 릴리즈 시 `main` push
+- **M6. Next.js 웹 전환** — 웹 클라이언트를 `webapp/`의 Next.js 16으로 재구현(전 기능 동등: 문제풀이·오답노트·이력서·면접 SSE·OAuth 4종·로컬→DB 이전, 웹 전용 레이아웃 포함), 기존 Vercel 프로젝트의 Root Directory를 `webapp/`으로 변경, 동등성 점검 후 develop → main 릴리즈 push로 컷오버. 완료 기준: Chrome·Safari(macOS/iOS)·Android Chrome에서 동등 기능과 면접 점진 스트리밍 확인, 모바일 PDF 업로드가 끊기지 않음 (ADR-019, `docs/plans/nextjs-web.md`)
+- **M7. 폴리시/QA** — 로딩·에러·빈 상태, 오프라인, 접근성, 3개 플랫폼 전체 여정 점검, 플랫폼별 특이사항을 `CLAUDE.md`에 기록, 릴리즈 시 `main` push
 
 ## 보류된 결정
 
@@ -189,3 +192,4 @@ admin/            React 어드민 웹앱 (M5)
 - M3: `LLM_PROVIDER` 전환, 기기 한도·IP 한도 각각 429, 동시 요청에도 한도 초과 없음, 과도하게 긴 대화 이력 거부
 - M4: 가입 후 기기 기록이 계정에 반영(중복 없음), 다른 계정으로 RLS 차단 확인
 - M5: 중복 후보에 `duplicate_of` 채워짐, 승인 시 `questions`에 정확히 반영
+- M6: `webapp`에서 `npm run lint && npx tsc --noEmit && npm test && npm run build` 통과, Chrome·macOS Safari·iOS Safari에서 면접 응답 점진 표시, 로그인 4종·로컬→DB 이전 동작, 컷오버 전후 모바일 PDF 업로드 유지

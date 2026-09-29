@@ -22,6 +22,10 @@
 - `categories`/`questions`는 앱에서 쓰기 불가다. M5-a부터는 콘텐츠 추가·수정을 어드민 웹앱(`admin/`)에서 직접 한다 — SQL 마이그레이션으로 시드하거나 이를 위해 PR을 만들지 않는다. 스키마·권한(GRANT/RLS/함수) 변경만 마이그레이션 파일로 남긴다.
 - PDF 텍스트 추출은 클라이언트나 Edge Function에서 하지 않는다 (Vercel Node 함수 담당).
 - 어드민(`admin/`)은 Flutter가 아닌 React 웹앱이다.
+- 사용자용 웹은 컷오버 후 Flutter가 아닌 `webapp/`의 Next.js 앱이다 (ADR-019, M6). Android/iOS만 Flutter다. 웹과 Flutter 앱은 URL 경로와 비회원 저장 형식(localStorage/`shared_preferences`의 `{ version: 1, items }`)을 맞춰 둔다.
+- 웹 클라이언트는 `interview-chat` Edge Function을 브라우저에서 직접 호출한다. Next 서버(Route Handler/Server Action)로 프록시하지 않는다 — 모든 요청이 Vercel IP로 잡혀 `guest_ip` 한도가 무너진다. Next 서버에도 LLM 호출·키를 두지 않는다.
+- 웹 SSE 파서는 `response.body.getReader()` 루프로 쓴다(ReadableStream async iteration 미사용, Safari 호환). Safari 스트리밍 실측 결과와 브라우저별 특이사항은 확인되는 대로 여기에 한 줄씩 추가한다 (현재 미실측).
+- Vercel: 기존 루트 프로젝트의 Root Directory가 `webapp/`이다(변경 후 루트 `vercel.json`·`scripts/vercel-build.sh`·`api/`는 빌드에서 쓰이지 않음). 컷오버(develop → main 릴리즈) 전에는 `main`에 푸시하지 않는다.
 - 대상 플랫폼은 Android/iOS/Web뿐이다. 데스크톱 플랫폼 폴더를 다시 만들지 않는다.
 - 플랫폼별 동작 차이(웹 전용 제약, 플러그인 미지원 등)가 생기면 여기에 추가한다.
 
@@ -42,6 +46,10 @@ flutter build apk           # Android 빌드
 flutter build ios           # iOS 빌드 (Xcode 서명 필요)
 flutter test                # 테스트 실행
 flutter analyze             # 정적 분석
+
+# 웹 (webapp/, Next.js)
+cd webapp && npm run dev    # http://localhost:3000 (webapp/.env.local 필요, 이름은 .env.local.example)
+cd webapp && npm run lint && npx tsc --noEmit && npm test && npm run build
 ```
 
 ## Definition of Done
@@ -50,6 +58,7 @@ PR 올리기 전 아래를 모두 통과해야 한다.
 
 - [ ] `flutter analyze` 통과
 - [ ] `flutter test` 통과
+- [ ] `webapp/` 변경 시: `npm run lint`, `npx tsc --noEmit`, `npm test`, `npm run build` 통과
 - [ ] UI 변경 시: 영향받는 플랫폼(Android/iOS/Web)에서 직접 확인
 
 ## 브랜치 전략
