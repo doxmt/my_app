@@ -1,27 +1,31 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { IBM_Plex_Sans_KR, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { AppShell } from "@/components/app-shell";
 import { UserIdProvider } from "@/components/user-id-provider";
 
-const geistSans = Geist({
-  variable: "--font-sans",
+// 한글 본문용 IBM Plex Sans KR + 코드·수치 표기용 JetBrains Mono.
+const plexSansKr = IBM_Plex_Sans_KR({
+  variable: "--font-plex",
+  weight: ["400", "500", "600", "700"],
   subsets: ["latin"],
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-code",
   subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "기술면접 준비",
+  title: "DevInterview - 기술면접 준비",
   description: "개발자 기술면접 준비 앱",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ko" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
+    <html lang="ko" className={`${plexSansKr.variable} ${jetbrainsMono.variable} h-full antialiased`}>
       <body className="min-h-full">
         <UserIdProvider>
           <AppShell>{children}</AppShell>

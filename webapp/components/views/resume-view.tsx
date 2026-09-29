@@ -2,7 +2,8 @@
 
 import { FileText } from "lucide-react";
 import { useRef, useState } from "react";
-import { ErrorState, LoadingState, PageTitle } from "@/components/page-state";
+import { MeLayout } from "@/components/me-layout";
+import { ErrorState, LoadingState } from "@/components/page-state";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useUserId } from "@/components/user-id-provider";
@@ -20,16 +21,15 @@ export function ResumeView() {
   }));
 
   return (
-    <>
-      <PageTitle>이력서</PageTitle>
+    <MeLayout title="이력서" description="모의면접 질문은 이 이력서를 바탕으로 만들어집니다.">
       {loading ? (
-        <LoadingState />
+        <LoadingState rows={1} />
       ) : error || !data ? (
         <ErrorState message="이력서를 불러오지 못했습니다." onRetry={reload} />
       ) : (
         <ResumeForm initial={data.resume} />
       )}
-    </>
+    </MeLayout>
   );
 }
 
@@ -39,7 +39,10 @@ function ResumeForm({ initial }: { initial: Resume | null }) {
   const [text, setText] = useState(initial?.text ?? "");
   const [sourceType, setSourceType] = useState<ResumeSourceType>(initial?.sourceType ?? "paste");
   const [extracting, setExtracting] = useState(false);
-  const [message, setMessage] = useState<{ text: string; isError: boolean } | null>(null);
+  const [message, setMessage] = useState<{
+    text: string;
+    isError: boolean;
+  } | null>(null);
 
   async function onPickPdf(file: File | undefined) {
     if (!file) return;
@@ -66,35 +69,53 @@ function ResumeForm({ initial }: { initial: Resume | null }) {
       });
       setMessage({ text: "이력서를 저장했습니다.", isError: false });
     } catch {
-      setMessage({ text: "이력서를 저장하지 못했습니다. 다시 시도해주세요.", isError: true });
+      setMessage({
+        text: "이력서를 저장하지 못했습니다. 다시 시도해주세요.",
+        isError: true,
+      });
     }
   }
 
   return (
-    <div className="flex flex-col gap-3">
-      <Textarea
-        value={text}
-        onChange={(event) => setText(event.target.value)}
-        rows={16}
-        placeholder="이력서 텍스트를 붙여넣으세요."
-      />
-      {message && (
-        <p className={message.isError ? "text-sm text-destructive" : "text-sm text-muted-foreground"}>
-          {message.text}
-        </p>
-      )}
-      <input
-        ref={fileInput}
-        type="file"
-        accept="application/pdf,.pdf"
-        className="hidden"
-        onChange={(event) => onPickPdf(event.target.files?.[0])}
-      />
-      <Button variant="outline" disabled={extracting} onClick={() => fileInput.current?.click()}>
-        <FileText aria-hidden />
-        {extracting ? "PDF에서 텍스트를 추출하는 중..." : "PDF 불러오기"}
-      </Button>
-      <Button onClick={save}>저장</Button>
+    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_260px] xl:items-start">
+      <div>
+        <label htmlFor="resume-text" className="mb-2 block text-sm font-medium">
+          이력서 텍스트
+        </label>
+        <Textarea
+          id="resume-text"
+          value={text}
+          onChange={(event) => setText(event.target.value)}
+          rows={20}
+          className="min-h-96 bg-card leading-relaxed"
+          placeholder="이력서 텍스트를 붙여넣으세요."
+        />
+      </div>
+      <aside aria-label="이력서 작업" className="flex flex-col gap-3 rounded-xl border bg-card p-5 xl:sticky xl:top-24">
+        <input
+          ref={fileInput}
+          type="file"
+          accept="application/pdf,.pdf"
+          className="hidden"
+          onChange={(event) => onPickPdf(event.target.files?.[0])}
+        />
+        <p className="text-xs text-muted-foreground">텍스트를 직접 붙여넣거나 PDF에서 불러올 수 있습니다.</p>
+        <Button variant="outline" size="lg" disabled={extracting} onClick={() => fileInput.current?.click()}>
+          <FileText aria-hidden />
+          {extracting ? "PDF에서 텍스트를 추출하는 중..." : "PDF 불러오기"}
+        </Button>
+        <Button size="lg" onClick={save}>
+          저장
+        </Button>
+        {message && (
+          <p
+            role={message.isError ? "alert" : "status"}
+            className={message.isError ? "text-sm text-destructive" : "text-sm text-success"}
+          >
+            {message.text}
+          </p>
+        )}
+      </aside>
     </div>
   );
 }

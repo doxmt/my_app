@@ -2,13 +2,23 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-@custom-variant dark (&:is(.dark *));
+/* 다크 토큰은 `.dark` 클래스 또는 OS 다크 모드(`.light`로 강제 해제 가능)에서 적용된다. */
+@custom-variant dark {
+  &:where(.dark, .dark *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:not(.light, .light *)) {
+      @slot;
+    }
+  }
+}
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-plex), "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --font-mono: var(--font-code), ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   --font-heading: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -18,6 +28,8 @@
   --color-sidebar-primary: var(--sidebar-primary);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar: var(--sidebar);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
   --color-chart-5: var(--chart-5);
   --color-chart-4: var(--chart-4);
   --color-chart-3: var(--chart-3);
@@ -49,72 +61,117 @@
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --background: #f4f6f9;
+  --foreground: #0f1720;
+  --card: #ffffff;
+  --card-foreground: #0f1720;
+  --popover: #ffffff;
+  --popover-foreground: #0f1720;
+  --primary: #0e7490;
+  --primary-foreground: #ffffff;
+  --secondary: #e9eef4;
+  --secondary-foreground: #172231;
+  --muted: #edf1f6;
+  --muted-foreground: #556173;
+  --accent: #e3f0f4;
+  --accent-foreground: #0b5568;
+  --destructive: #c62828;
+  --success: #15803d;
+  --success-foreground: #ffffff;
+  --border: #dde3ec;
+  --input: #cbd3df;
+  --ring: #0e7490;
+  --chart-1: #0e7490;
+  --chart-2: #15803d;
+  --chart-3: #b45309;
+  --chart-4: #556173;
+  --chart-5: #172231;
+  --radius: 0.5rem;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #0f1720;
+  --sidebar-primary: #0e7490;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e3f0f4;
+  --sidebar-accent-foreground: #0b5568;
+  --sidebar-border: #dde3ec;
+  --sidebar-ring: #0e7490;
+  color-scheme: light;
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: #0b0f14;
+  --foreground: #e6ebf2;
+  --card: #121820;
+  --card-foreground: #e6ebf2;
+  --popover: #121820;
+  --popover-foreground: #e6ebf2;
+  --primary: #3cc4dc;
+  --primary-foreground: #04212a;
+  --secondary: #1a232e;
+  --secondary-foreground: #e6ebf2;
+  --muted: #171f29;
+  --muted-foreground: #98a5b7;
+  --accent: #12303a;
+  --accent-foreground: #8fe0ef;
+  --destructive: #f87171;
+  --success: #4ade80;
+  --success-foreground: #04210f;
+  --border: #243040;
+  --input: #303d50;
+  --ring: #3cc4dc;
+  --chart-1: #3cc4dc;
+  --chart-2: #4ade80;
+  --chart-3: #fbbf24;
+  --chart-4: #98a5b7;
+  --chart-5: #e6ebf2;
+  --sidebar: #0f141b;
+  --sidebar-foreground: #e6ebf2;
+  --sidebar-primary: #3cc4dc;
+  --sidebar-primary-foreground: #04212a;
+  --sidebar-accent: #12303a;
+  --sidebar-accent-foreground: #8fe0ef;
+  --sidebar-border: #243040;
+  --sidebar-ring: #3cc4dc;
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) {
+    --background: #0b0f14;
+    --foreground: #e6ebf2;
+    --card: #121820;
+    --card-foreground: #e6ebf2;
+    --popover: #121820;
+    --popover-foreground: #e6ebf2;
+    --primary: #3cc4dc;
+    --primary-foreground: #04212a;
+    --secondary: #1a232e;
+    --secondary-foreground: #e6ebf2;
+    --muted: #171f29;
+    --muted-foreground: #98a5b7;
+    --accent: #12303a;
+    --accent-foreground: #8fe0ef;
+    --destructive: #f87171;
+    --success: #4ade80;
+    --success-foreground: #04210f;
+    --border: #243040;
+    --input: #303d50;
+    --ring: #3cc4dc;
+    --chart-1: #3cc4dc;
+    --chart-2: #4ade80;
+    --chart-3: #fbbf24;
+    --chart-4: #98a5b7;
+    --chart-5: #e6ebf2;
+    --sidebar: #0f141b;
+    --sidebar-foreground: #e6ebf2;
+    --sidebar-primary: #3cc4dc;
+    --sidebar-primary-foreground: #04212a;
+    --sidebar-accent: #12303a;
+    --sidebar-accent-foreground: #8fe0ef;
+    --sidebar-border: #243040;
+    --sidebar-ring: #3cc4dc;
+    color-scheme: dark;
+  }
 }
 
 @layer base {
@@ -123,8 +180,43 @@
   }
   body {
     @apply bg-background text-foreground;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
   }
   html {
     @apply font-sans;
   }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+/* 클릭 가능한 카드·행 공통: 호버 시 테두리 강조, 키보드 포커스 링. */
+@utility interactive-surface {
+  transition: border-color 120ms, background-color 120ms, box-shadow 120ms;
+  &:hover {
+    border-color: color-mix(in oklch, var(--primary) 55%, var(--border));
+    background-color: color-mix(in oklch, var(--accent) 45%, var(--card));
+  }
+  &:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
+
+/* 히어로 배경용 옅은 격자. 가장자리로 갈수록 사라진다. */
+@utility bg-grid {
+  background-image:
+    linear-gradient(to right, color-mix(in oklch, var(--border) 70%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in oklch, var(--border) 70%, transparent) 1px, transparent 1px);
+  background-size: 36px 36px;
+  mask-image: radial-gradient(ellipse 80% 90% at 30% 40%, #000 30%, transparent 100%);
 }
