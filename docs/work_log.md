@@ -133,3 +133,18 @@
 - `lib/features/practice/presentation/field_page.dart`, `topic_list_page.dart`, `question_list_page.dart`
 - `supabase/functions/interview-chat/index.ts` (에러 로깅 추가)
 - `docs/plans/oauth-apple-kakao-home-ui-llm.md`, `docs/plans/open-questions.md`, `docs/adr.md`, `docs/roadmap.md`, `docs/architecture.md`, `docs/prd.md`, `docs/overview.md`
+
+## 2026-09-29
+- Flutter 웹 반응형 작업(#23: AppShell NavigationRail 분기)을 진행하다가, 사용자용 웹은 원래 React/Next로 만들 계획이었다는 방향 확인 → 커밋 전에 전부 폐기하고 #23 닫음
+- 사용자용 웹을 Next.js로 전환하는 계획 수립(`docs/plans/nextjs-web.md`): planner 인터뷰 + explore(코드베이스) + document-specialist(Next 16/Supabase SSR/Vercel/Safari SSE) 조사. 확정: 전 기능 동등 후 한 번에 전환, 새 M6(기존 M6 폴리시→M7), Vercel은 A안(기존 프로젝트 Root Directory → `webapp/`)
+- 이슈 #24 / 브랜치 `feat/24-nextjs-web` / PR #25: `webapp/` 신규(Next 16.3.6, Tailwind v4, shadcn/ui, Vitest 25개). 문제풀이·오답노트·이력서·PDF Route Handler·모의면접(SSE, 브라우저에서 Edge Function 직접 호출)·OAuth 4종·로컬→DB 이전·회원 경로 구현. CI에 `webapp` 잡 추가, ADR-019, 로드맵(새 M6/M7), 문서 갱신
+- Vercel 설정 변경(CLI/API): Root Directory `webapp`, 프리셋 Next.js, `NEXT_PUBLIC_SUPABASE_URL`/`PUBLISHABLE_KEY` 추가(Preview/Production). Root Directory를 바꿔도 루트 `vercel.json`이 적용되어 Preview 빌드가 실패 → `webapp/vercel.json`으로 덮어써 해결, 문서 정정
+- Supabase Redirect URLs 등록(Management API, 키체인 CLI 토큰 사용 승인 후): localhost:3000, `my-*-songtaehas-projects.vercel.app`, `myapp-git-*-…`, `myapp-teal-mu.vercel.app`. Site URL은 그대로. 변경 전 값은 Redirect URLs 비어 있음 / Site URL `http://localhost:3000`
+- `harness_framework`에서 designer 에이전트를 `.claude/agents/designer.md`로 복사, designer로 웹 UI를 PC 기준으로 리팩토링(1차 색·레이아웃 → 2차 상단 네비 + 푸터 웹사이트 구조로 재설계). 미커밋 상태
+- 실수 기록: 명령에 stray `cat > /tmp/x`를 넣어 멈춤(종료·임시 파일 삭제, 영향 없음)
+
+### 주요 변경 파일
+- `webapp/` 전체(신규), `webapp/vercel.json`, `.github/workflows/ci.yml`
+- `docs/plans/nextjs-web.md`, `docs/plans/web-responsive-layout.md`(대체됨 표기), `docs/plans/open-questions.md`
+- `docs/adr.md`(ADR-019), `docs/roadmap.md`, `docs/architecture.md`, `docs/overview.md`, `CLAUDE.md`
+- (미커밋) `webapp/components/**` UI 재설계, `webapp/app/globals.css`, `webapp/app/layout.tsx`, `.claude/agents/designer.md`

@@ -9,7 +9,7 @@
 - **PDF 추출**: Vercel Node 서버리스 함수 (`unpdf` 라이브러리). 컷오버 전에는 루트 `api/parse-pdf.ts`(Flutter 웹과 함께 배포), 이후에는 `webapp/app/api/parse-pdf/route.ts`(Route Handler, raw 바이트 본문, 같은 경로 `/api/parse-pdf`)가 이어받고 모바일 앱도 이 엔드포인트를 쓴다
 - **어드민**: 별도 웹앱, Vite + React + TypeScript, Tailwind v4 + shadcn/ui (M5-a). 로그인은 고정 관리자 계정 + 비밀번호 전용 화면(`signInWithPassword` 내부 호출, ADR-016)
 - **배포**: 웹은 Vercel(develop → Preview, main → Production, path URL 전략 + SPA rewrite), CI는 GitHub Actions(`flutter analyze` + `flutter test`). PR에는 CI·Vercel 배포 결과를 한글 요약 댓글 하나로 갱신(`.github/scripts/pr-summary.js`, `ci.yml` + `pr-deploy.yml`의 `deployment_status`), Vercel 봇 댓글은 끔. GitHub 기본 브랜치는 `develop`. M6부터 CI에 `webapp` 잡(`npm ci` → lint → `tsc --noEmit` → test → build)이 추가되고, 루트 Vercel 프로젝트의 Root Directory가 `webapp/`이 되면 develop Preview는 Next만 빌드한다(루트 `vercel.json`의 Flutter 빌드 설정은 그대로 적용되므로 `webapp/vercel.json`으로 덮어쓴다). Production은 컷오버(develop → main 릴리즈 push) 전까지 기존 Flutter 웹 배포 그대로
-- **화면**: 하단 탭 3개(홈 `/` · 모의면접 `/interview` · 내 정보 `/me`), `StatefulShellRoute.indexedStack`. 모바일 레이아웃 먼저. 웹 전용 레이아웃(넓은 화면 좌측 내비 + 본문 폭 제한)은 Next 웹(M6)에서 구현 (ADR-019)
+- **화면**: 모바일(Flutter)은 하단 탭 3개(홈 `/` · 모의면접 `/interview` · 내 정보 `/me`), `StatefulShellRoute.indexedStack`. 웹(Next)은 PC 기준 웹사이트 구조 — sticky 상단 내비(문제풀이/모의면접/오답노트/이력서 + 로그인·계정 메뉴), 본문 최대 1200px, 푸터, 1024px 미만은 햄버거 메뉴. 내 정보 영역은 좌측 서브 메뉴(내 정보/이력서/오답노트) (ADR-019)
 - **설정**: Supabase URL/publishable key, PDF 파싱 함수 오리진(`PDF_PARSE_BASE_URL`)은 `String.fromEnvironment`로 읽음. 로컬은 `--dart-define-from-file=env/dev.json`(gitignore), Vercel은 환경변수를 `--dart-define`으로 전달(`PDF_PARSE_BASE_URL`은 Vercel이 자동 주입하는 `$VERCEL_URL`로 배포마다 자기 자신을 가리킴) (CI는 불필요). Next 웹의 env는 `webapp/.env.local`(gitignore, 이름은 `webapp/.env.local.example`) / Vercel 환경변수. 컷오버 후 Flutter 웹 빌드가 사라지므로 `PDF_PARSE_BASE_URL`은 모바일 빌드용으로만 남고, 웹 도메인이 유지되면 값 변경이 필요 없다
 - **마이그레이션**: 원격 Supabase에 `supabase db push`로 적용. 로컬 Docker는 쓰지 않음
 
@@ -36,7 +36,7 @@ api/                   Vercel Node 서버리스 함수 (parse-pdf.ts, PDF 텍스
 
 webapp/                Next.js 웹 클라이언트 (M6). 기존 루트 Vercel 프로젝트의 Root Directory=webapp/
   app/                 라우트: / · /categories/... · /interview · /me · /me/login · /me/resume · /me/wrong-notes/... · /auth/callback · /api/parse-pdf
-  components/          화면(views/), 앱 셸(하단 탭 ↔ 넓은 화면 좌측 내비), UserIdProvider
+  components/          화면(views/), 앱 셸(상단 내비 + 푸터, 좁은 화면은 햄버거), UserIdProvider
   lib/                 supabase/(client·server·proxy), storage/(localStorage, Flutter 호환 형식), data/(로컬·Supabase 리포지토리), auth/(로컬→DB 이전, 안전한 next 경로), interview/(SSE 파서, 채팅 클라이언트)
 
 supabase/
