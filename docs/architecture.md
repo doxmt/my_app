@@ -24,6 +24,8 @@ lib/
     device/            device_id.dart (최초 실행 시 UUID 생성·보관)
     storage/           비회원 로컬 저장 (오답노트, 이력서, 면접 대화)
     error/             Result / Failure 타입
+    theme/             theme_mode_provider.dart (라이트/다크 저장·상태, 기본 라이트)
+    speech/            dictation.dart(순수 로직), dictation_button.dart (마이크 음성 입력)
   features/
     categories/        카테고리 탐색
     practice/          문제풀이 흐름
@@ -36,8 +38,8 @@ api/                   Vercel Node 서버리스 함수 (parse-pdf.ts, PDF 텍스
 
 webapp/                Next.js 웹 클라이언트 (M6). 기존 루트 Vercel 프로젝트의 Root Directory=webapp/
   app/                 라우트: / · /categories/... · /interview · /me · /me/login · /me/resume · /me/wrong-notes/... · /auth/callback · /api/parse-pdf
-  components/          화면(views/), 앱 셸(상단 내비 + 푸터, 좁은 화면은 햄버거), UserIdProvider
-  lib/                 supabase/(client·server·proxy), storage/(localStorage, Flutter 호환 형식), data/(로컬·Supabase 리포지토리), auth/(로컬→DB 이전, 안전한 next 경로), interview/(SSE 파서, 채팅 클라이언트)
+  components/          화면(views/), 앱 셸(상단 내비 + 푸터, 좁은 화면은 햄버거), UserIdProvider, theme-toggle/setting/sync(화면 모드), mic-button(음성 입력)
+  lib/                 supabase/(client·server·proxy), storage/(localStorage, Flutter 호환 형식), data/(로컬·Supabase 리포지토리), auth/(로컬→DB 이전, 안전한 next 경로), interview/(SSE 파서, 채팅 클라이언트), theme.ts·theme-client.ts(화면 모드), speech.ts(음성 입력 순수 로직)
 
 supabase/
   migrations/          스키마, RLS, GRANT, RPC
@@ -59,6 +61,8 @@ admin/                 Vite+React 어드민 웹앱 (M5-a), 별도 Vercel 프로�
 - **콘텐츠 쓰기는 앱에서 불가, 어드민에서만**: `categories` / `questions`는 일반 사용자에게 공개 읽기 전용(RLS `..._public_select`, `questions`는 `is_published=true`만). 쓰기와 미게시 조회는 `profiles.is_admin=true`인 어드민 RLS 정책으로만 허용한다(M5-a). 새 문제는 어드민 직접 작성 또는 승인 흐름(`question_candidates` → `approve_question_candidate` RPC → `questions`) 두 경로로 들어가며, 같은 에디터 폼을 공유한다. M5-a 이전에는 SQL 시드로만 넣었다.
 - **권한은 명시적으로**: 프로젝트 설정상 새 테이블이 Data API에 자동 노출되지 않고 RLS가 자동으로 켜진다. 마이그레이션마다 `GRANT`와 RLS 정책(공개 테이블의 select 포함)을 직접 작성한다.
 - **홈 분야 카드 아이콘**: 각 분야의 아이콘은 `categories.slug` → `IconData` 매핑을 Flutter 앱 코드에서만 처리한다. DB 컬럼 추가 없음. 새 분야 추가 시마다 앱 매핑 코드를 업데이트하고 배포해야 한다.
+- **화면 모드(라이트/다크)**: 웹·앱 모두 기본은 **라이트**이고 기기 설정을 따르지 않는다. 사용자가 라이트/다크를 골라 바꾸며 기기별로 저장한다(웹 `localStorage`의 `theme` + `<html>`의 `dark` 클래스를 첫 페인트 전 인라인 스크립트로 적용, 앱 `SharedPreferences`의 `theme_mode`를 `main`에서 미리 읽어 `initialThemeModeProvider`로 주입). 색 토큰은 CSS(`webapp/app/globals.css`)와 Dart(`lib/app/theme.dart`)에 같은 값으로 따로 있으므로 한쪽을 바꾸면 다른 쪽도 맞춘다 (ADR-020).
+- **음성 입력**: 모의면접 입력창과 문제풀기 답변창에서 마이크로 입력한다. 웹은 브라우저 Web Speech API, 앱은 `speech_to_text`(기기 내장 음성인식)를 쓰고, 인식된 글을 입력창 뒤에 채운 뒤 사용자가 확인하고 직접 전송한다. 오디오를 앱 서버(Edge Function)로 보내지 않으므로 STT용 LLM 호출·키가 필요 없다 (ADR-021).
 - **딥링크**: iOS는 `CFBundleURLTypes`, Android는 intent-filter에 커스텀 스킴(reverse-domain 형식)을 등록하고, 앱에서 `go_router`의 deep link 처리로 대응한다. 스킴 값은 이번 작업(Apple/Kakao 로그인) 계획 단계에서 확정한다.
 
 ## 데이터 모델
