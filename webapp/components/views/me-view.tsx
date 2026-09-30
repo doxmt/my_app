@@ -4,6 +4,7 @@ import { ChevronRight, FileText, LogIn, NotebookPen, type LucideIcon } from "luc
 import Link from "next/link";
 import { useState } from "react";
 import { MeLayout } from "@/components/me-layout";
+import { ThemeSetting } from "@/components/theme-setting";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { useAccount } from "@/components/use-account";
 import { getBrowserClient } from "@/lib/supabase/client";
@@ -87,6 +88,13 @@ export function MeView() {
               로그아웃에 실패했습니다. 다시 시도해주세요.
             </p>
           )}
+        </section>
+
+        <section aria-labelledby="theme-title" className="rounded-xl border bg-card p-6">
+          <h2 id="theme-title" className="mb-4 text-sm font-semibold text-muted-foreground">
+            화면 모드
+          </h2>
+          <ThemeSetting />
         </section>
 
         <section aria-labelledby="shortcut-title">
