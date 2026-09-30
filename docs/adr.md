@@ -190,3 +190,13 @@
 이유: 사용자가 웹은 React/Next 생태계로 따로 만들기로 결정했다. Flutter 안에서 반응형 레이아웃을 만드는 대신 웹에 맞는 도구로 웹을 만든다. 면접 요청을 Next 서버로 우회시키면 모든 요청이 Vercel IP로 잡혀 `guest_ip` 한도가 무너지고 API 표면만 늘어나므로 브라우저 직접 호출을 유지한다. Root Directory 변경(A안)은 새 프로젝트 도메인·설정을 따로 관리하지 않아도 되고, 구버전 모바일 앱이 없어 루트 `api/parse-pdf.ts`가 사라져도 같은 도메인·같은 경로의 Route Handler가 이어받으면 된다.
 대안: Flutter 웹 반응형(#23), 새 Vercel 프로젝트로 병행 운영 후 컷오버(B안), Next에서 SSG/ISR로 공개 페이지 SEO 대응, 어드민과 웹 통합.
 트레이드오프: 화면과 로직을 Flutter와 Next 두 벌로 구현해야 해 새 기능마다 두 번 작업한다. Root Directory 변경 순간부터 develop Preview는 Next만 빌드하고 Flutter 웹 Preview는 사라지며, 변경 후 `main` push는 곧 Next Production 배포다. Root Directory 변경 시 도메인·env·Production Branch 유지 여부는 공식 문서로 확인하지 못해 변경 전 화면 캡처로 대응한다. 웹 SSE 스트리밍(특히 iOS Safari)은 Flutter 웹에서도 실측된 적이 없어 Next에서 처음 확인한다. 루트의 Flutter 웹 빌드 경로(`vercel.json`, `scripts/vercel-build.sh`, `api/parse-pdf.ts`, `web/`)는 컷오버 안정화 후 별도 정리한다.
+
+---
+
+## ADR-020: 웹·앱 색상 통일과 다크 모드 정책
+
+**날짜:** 2026-09-30
+결정: 웹(`webapp/`)과 모바일 앱(`lib/app/theme.dart`)의 색상 토큰을 같은 값으로 맞춘다 — 흰 배경, 강조색 블루 `#2563eb`, 모서리 8dp. 다크 모드는 웹과 앱이 다르게 동작한다: 웹은 OS 다크 모드를 따르지 않고 항상 라이트(`.dark` 클래스를 붙일 때만 다크), 앱은 시스템 설정을 따른다.
+이유: 배경을 흰색으로 하고 싶다는 요구에서 출발했고, 웹이 OS 다크 모드를 따르면 흰 배경이 브라우저 설정에 따라 보이지 않을 수 있었다. 앱은 기존 동작(시스템 따라감)을 유지했다.
+대안: 시드 색 기반 자동 팔레트 유지(녹색 `#1F5A4A`, 웹과 색이 달라짐), 웹도 OS 다크 추종 유지, 앱도 항상 라이트.
+트레이드오프: 웹과 앱의 다크 정책이 달라 같은 사용자가 서로 다른 화면을 볼 수 있다. 색 토큰이 CSS와 Dart 두 곳에 있어 한쪽을 바꾸면 다른 쪽도 손으로 맞춰야 한다. 앱에는 웹의 IBM Plex Sans KR 폰트를 적용하지 않았다(의존성 추가 필요).
