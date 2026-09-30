@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/speech/dictation_button.dart';
 import '../../categories/presentation/categories_providers.dart';
 import '../../wrong_notes/domain/wrong_note.dart';
 import '../../wrong_notes/presentation/wrong_notes_providers.dart';
@@ -196,6 +197,10 @@ class _PracticeBody extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Align(
+          alignment: Alignment.centerRight,
+          child: DictationButton(controller: answerController, enabled: !revealed),
+        ),
         TextField(
           controller: answerController,
           enabled: !revealed,
