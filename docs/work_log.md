@@ -159,3 +159,18 @@
 - `webapp/app/globals.css` (PR #27)
 - `lib/app/theme.dart` (미커밋, 브랜치 `design/28-app-theme`)
 - `docs/work_log.md`, `docs/current_state.md`, `docs/adr.md`(ADR-020)
+
+## 2026-09-30 (이어서)
+- 웹·앱 화면 모드(라이트/다크) 설정 구현 — 처음에는 "기본 시스템 + 라이트/다크 선택"이었다가 사용자 요청으로 웹은 헤더 토글 추가, 웹·앱 모두 "기본 라이트(기기 설정 미추종)"로 변경. 웹은 `localStorage` `theme` + `dark` 클래스(첫 페인트 전 인라인 스크립트), 앱은 `SharedPreferences` `theme_mode`. ADR-020을 최종 정책으로 정리
+- 이력서 PDF 한도 조사(4MB·20페이지, Vercel 요청 본문 4.5MB 한도라 5MB 불가) 후 웹·앱 이력서 화면에 안내 문구 추가
+- 웹 개발 모드 hydration 경고는 브라우저 확장이 `<body>`에 붙이는 속성이 원인이라 `<body suppressHydrationWarning>` 처리
+- 모의면접·문제풀기 음성 입력(마이크) 구현: 웹 Web Speech API(`webapp/components/mic-button.tsx`, `lib/speech.ts`), 앱 `speech_to_text`(`lib/core/speech/`), iOS 마이크·음성 인식 사용 설명, Android `RECORD_AUDIO`·`queries`. 입력창에 채우고 직접 전송(ADR-021). Android 디버그 빌드 성공(병합 매니페스트 확인), 실제 말하기·iOS 빌드는 미검증
+- **버그 발견·수정**: Android 메인 매니페스트에 `INTERNET` 권한이 없어(debug/profile에만 있음) 릴리즈 빌드에서 네트워크가 막힐 수 있던 문제를 보정
+- 이슈 #30 / PR #31(CI 통과 후 사용자 요청으로 자동 머지) 머지, #26·#28·#30은 자동 close가 동작하지 않아 수동으로 닫음. PR #27(웹 색상)·#29(앱 테마)도 머지
+- 실수 기록: 기다리는 명령에서 출력을 `/tmp`에 남김(바로 삭제), `dart format`이 기존 코드를 80자로 재정렬해 되돌림(프로젝트는 120자 줄 사용)
+
+### 주요 변경 파일
+- `webapp/lib/theme.ts`, `theme-client.ts`, `webapp/components/theme-*.tsx`, `mic-button.tsx`, `webapp/lib/speech.ts`, `webapp/app/layout.tsx`
+- `lib/core/theme/theme_mode_provider.dart`, `lib/core/speech/`, `lib/main.dart`, `lib/features/me/presentation/me_page.dart`, `lib/features/interview/presentation/interview_page.dart`, `lib/features/practice/presentation/question_detail_page.dart`, `lib/features/resume/presentation/resume_page.dart`
+- `android/app/src/main/AndroidManifest.xml`, `ios/Runner/Info.plist`, `pubspec.yaml`, `pubspec.lock`
+- `docs/adr.md`(ADR-020 정리, ADR-021), `docs/architecture.md`, `docs/work_log.md`, `docs/current_state.md`
