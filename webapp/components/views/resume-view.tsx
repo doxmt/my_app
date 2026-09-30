@@ -104,6 +104,7 @@ function ResumeForm({ initial }: { initial: Resume | null }) {
           <FileText aria-hidden />
           {extracting ? "PDF에서 텍스트를 추출하는 중..." : "PDF 불러오기"}
         </Button>
+        <p className="-mt-1 text-xs text-muted-foreground">PDF는 최대 4MB, 20페이지까지 불러올 수 있습니다.</p>
         <Button size="lg" onClick={save}>
           저장
         </Button>

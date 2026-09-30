@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { SiteFooter } from "@/components/site-footer";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { buttonVariants } from "@/components/ui/button";
 import { useAccount } from "@/components/use-account";
 import { getBrowserClient } from "@/lib/supabase/client";
@@ -174,19 +175,23 @@ function SiteHeader() {
             </Link>
           ))}
         </nav>
-        <div className="ml-auto hidden lg:block">
+        <div className="ml-auto hidden items-center gap-2 lg:flex">
+          <ThemeToggle />
           <AccountArea />
         </div>
-        <button
-          type="button"
-          className="ml-auto grid size-10 place-items-center rounded-md border lg:hidden"
-          aria-label={mobileOpen ? "메뉴 닫기" : "메뉴 열기"}
-          aria-expanded={mobileOpen}
-          aria-controls="mobile-menu"
-          onClick={() => setMobileOpen((value) => !value)}
-        >
-          {mobileOpen ? <X className="size-5" aria-hidden /> : <Menu className="size-5" aria-hidden />}
-        </button>
+        <div className="ml-auto flex items-center gap-2 lg:hidden">
+          <ThemeToggle />
+          <button
+            type="button"
+            className="grid size-10 place-items-center rounded-md border"
+            aria-label={mobileOpen ? "메뉴 닫기" : "메뉴 열기"}
+            aria-expanded={mobileOpen}
+            aria-controls="mobile-menu"
+            onClick={() => setMobileOpen((value) => !value)}
+          >
+            {mobileOpen ? <X className="size-5" aria-hidden /> : <Menu className="size-5" aria-hidden />}
+          </button>
+        </div>
       </div>
 
       {mobileOpen && (

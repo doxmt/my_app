@@ -2,7 +2,7 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-/* 항상 라이트로 표시한다. 다크 토큰은 `.dark` 클래스를 붙였을 때만 적용된다(OS 다크 모드는 따르지 않음). */
+/* 다크 토큰은 `<html>`에 `dark` 클래스가 붙었을 때 적용된다. 기본은 라이트이고 헤더 토글·내 정보에서 바꾼다(lib/theme.ts). */
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme inline {

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/supabase/supabase_client_provider.dart';
+import '../../../core/theme/theme_mode_provider.dart';
 import '../../auth/presentation/auth_providers.dart';
 
 /// 내 정보 탭. 로그인 진입점(또는 계정 정보)과 이력서·오답노트 메뉴 항목을 보여준다.
@@ -12,6 +13,7 @@ class MePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final userId = ref.watch(currentUserIdProvider);
+    final themeMode = ref.watch(themeModeProvider);
     final user = userId == null ? null : ref.watch(supabaseClientProvider).auth.currentUser;
 
     return Scaffold(
@@ -42,6 +44,37 @@ class MePage extends ConsumerWidget {
               trailing: const Icon(Icons.chevron_right),
               onTap: () => context.push('/me/login'),
             ),
+          ListTile(
+            title: const Text('화면 모드'),
+            subtitle: Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SegmentedButton<ThemeMode>(
+                    showSelectedIcon: false,
+                    segments: const [
+                      ButtonSegment(
+                        value: ThemeMode.light,
+                        icon: Icon(Icons.light_mode_outlined),
+                        label: Text('라이트'),
+                      ),
+                      ButtonSegment(
+                        value: ThemeMode.dark,
+                        icon: Icon(Icons.dark_mode_outlined),
+                        label: Text('다크'),
+                      ),
+                    ],
+                    selected: {themeMode},
+                    onSelectionChanged: (selection) =>
+                        ref.read(themeModeProvider.notifier).setMode(selection.first),
+                  ),
+                  const SizedBox(height: 8),
+                  Text('기본은 라이트 모드입니다. 이 기기에 저장됩니다.', style: Theme.of(context).textTheme.bodySmall),
+                ],
+              ),
+            ),
+          ),
           ListTile(
             title: const Text('이력서'),
             trailing: const Icon(Icons.chevron_right),

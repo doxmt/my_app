@@ -3,6 +3,7 @@
 import { FileText, Send } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { MicButton } from "@/components/mic-button";
 import { Breadcrumb, ErrorState, LoadingState, Page, PageHeader } from "@/components/page-state";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -362,6 +363,7 @@ function ChatView({
             disabled={sending || blocked}
             placeholder="메시지를 입력하세요"
           />
+          <MicButton value={input} onChange={setInput} disabled={sending || blocked} />
           <Button type="submit" size="icon-lg" className="size-10" aria-label="보내기" disabled={sending || blocked}>
             <Send aria-hidden />
           </Button>

@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { DifficultyBadge } from "@/components/difficulty-badge";
+import { MicButton } from "@/components/mic-button";
 import { ErrorState, LoadingState, Page, PageHeader } from "@/components/page-state";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -187,9 +188,12 @@ function PracticeBody({ question, categoryId }: { question: Question; categoryId
   return (
     <div className="flex flex-col gap-4">
       <section aria-labelledby="my-answer-heading" className="rounded-xl border bg-card p-6">
-        <h2 id="my-answer-heading" className="mb-3 font-mono text-xs text-muted-foreground">
-          내 답변
-        </h2>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h2 id="my-answer-heading" className="font-mono text-xs text-muted-foreground">
+            내 답변
+          </h2>
+          <MicButton value={answer} onChange={setAnswer} disabled={revealed} />
+        </div>
         <Textarea
           value={answer}
           onChange={(event) => setAnswer(event.target.value)}

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/speech/dictation_button.dart';
 import '../../categories/presentation/categories_providers.dart';
 import '../../resume/presentation/resume_providers.dart';
 import '../domain/interview_chat_client.dart';
@@ -420,7 +421,7 @@ class _ChatViewState extends ConsumerState<_ChatView> {
                     onSubmitted: (_) => _submit(),
                   ),
                 ),
-                const SizedBox(width: 8),
+                DictationButton(controller: _inputController, enabled: !_isSending && !isBlocked),
                 IconButton(
                   icon: const Icon(Icons.send),
                   onPressed: _isSending || isBlocked ? null : _submit,
