@@ -146,6 +146,11 @@ class _ResumeFormState extends ConsumerState<_ResumeForm> {
                 : const Icon(Icons.picture_as_pdf_outlined),
             label: const Text('PDF 불러오기'),
           ),
+          const SizedBox(height: 4),
+          Text(
+            'PDF는 최대 4MB, 20페이지까지 불러올 수 있습니다.',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
           const SizedBox(height: 8),
           ElevatedButton(onPressed: _save, child: const Text('저장')),
         ],
