@@ -2,17 +2,8 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-/* 다크 토큰은 `.dark` 클래스 또는 OS 다크 모드(`.light`로 강제 해제 가능)에서 적용된다. */
-@custom-variant dark {
-  &:where(.dark, .dark *) {
-    @slot;
-  }
-  @media (prefers-color-scheme: dark) {
-    &:where(:not(.light, .light *)) {
-      @slot;
-    }
-  }
-}
+/* 항상 라이트로 표시한다. 다크 토큰은 `.dark` 클래스를 붙였을 때만 적용된다(OS 다크 모드는 따르지 않음). */
+@custom-variant dark (&:where(.dark, .dark *));
 
 @theme inline {
   --color-background: var(--background);
@@ -61,118 +52,80 @@
 }
 
 :root {
-  --background: #f4f6f9;
-  --foreground: #0f1720;
+  --background: #ffffff;
+  --foreground: #111827;
   --card: #ffffff;
-  --card-foreground: #0f1720;
+  --card-foreground: #111827;
   --popover: #ffffff;
-  --popover-foreground: #0f1720;
-  --primary: #0e7490;
+  --popover-foreground: #111827;
+  --primary: #2563eb;
   --primary-foreground: #ffffff;
-  --secondary: #e9eef4;
-  --secondary-foreground: #172231;
-  --muted: #edf1f6;
-  --muted-foreground: #556173;
-  --accent: #e3f0f4;
-  --accent-foreground: #0b5568;
-  --destructive: #c62828;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #1e293b;
+  --muted: #f5f7fa;
+  --muted-foreground: #4b5563;
+  --accent: #eaf1ff;
+  --accent-foreground: #1e40af;
+  --destructive: #dc2626;
   --success: #15803d;
   --success-foreground: #ffffff;
-  --border: #dde3ec;
-  --input: #cbd3df;
-  --ring: #0e7490;
-  --chart-1: #0e7490;
+  --border: #e5e7eb;
+  --input: #d1d5db;
+  --ring: #2563eb;
+  --chart-1: #2563eb;
   --chart-2: #15803d;
   --chart-3: #b45309;
-  --chart-4: #556173;
-  --chart-5: #172231;
+  --chart-4: #6b7280;
+  --chart-5: #111827;
   --radius: 0.5rem;
   --sidebar: #ffffff;
-  --sidebar-foreground: #0f1720;
-  --sidebar-primary: #0e7490;
+  --sidebar-foreground: #111827;
+  --sidebar-primary: #2563eb;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #e3f0f4;
-  --sidebar-accent-foreground: #0b5568;
-  --sidebar-border: #dde3ec;
-  --sidebar-ring: #0e7490;
+  --sidebar-accent: #eaf1ff;
+  --sidebar-accent-foreground: #1e40af;
+  --sidebar-border: #e5e7eb;
+  --sidebar-ring: #2563eb;
   color-scheme: light;
 }
 
 .dark {
-  --background: #0b0f14;
-  --foreground: #e6ebf2;
-  --card: #121820;
-  --card-foreground: #e6ebf2;
-  --popover: #121820;
-  --popover-foreground: #e6ebf2;
-  --primary: #3cc4dc;
-  --primary-foreground: #04212a;
-  --secondary: #1a232e;
-  --secondary-foreground: #e6ebf2;
-  --muted: #171f29;
-  --muted-foreground: #98a5b7;
-  --accent: #12303a;
-  --accent-foreground: #8fe0ef;
+  --background: #0b1220;
+  --foreground: #e5e9f0;
+  --card: #111a2b;
+  --card-foreground: #e5e9f0;
+  --popover: #111a2b;
+  --popover-foreground: #e5e9f0;
+  --primary: #6c9bff;
+  --primary-foreground: #06122e;
+  --secondary: #1a2438;
+  --secondary-foreground: #e5e9f0;
+  --muted: #151f33;
+  --muted-foreground: #9aa6ba;
+  --accent: #172a52;
+  --accent-foreground: #b9d0ff;
   --destructive: #f87171;
   --success: #4ade80;
   --success-foreground: #04210f;
-  --border: #243040;
-  --input: #303d50;
-  --ring: #3cc4dc;
-  --chart-1: #3cc4dc;
+  --border: #25314a;
+  --input: #34425f;
+  --ring: #6c9bff;
+  --chart-1: #6c9bff;
   --chart-2: #4ade80;
   --chart-3: #fbbf24;
-  --chart-4: #98a5b7;
-  --chart-5: #e6ebf2;
-  --sidebar: #0f141b;
-  --sidebar-foreground: #e6ebf2;
-  --sidebar-primary: #3cc4dc;
-  --sidebar-primary-foreground: #04212a;
-  --sidebar-accent: #12303a;
-  --sidebar-accent-foreground: #8fe0ef;
-  --sidebar-border: #243040;
-  --sidebar-ring: #3cc4dc;
+  --chart-4: #9aa6ba;
+  --chart-5: #e5e9f0;
+  --sidebar: #111a2b;
+  --sidebar-foreground: #e5e9f0;
+  --sidebar-primary: #6c9bff;
+  --sidebar-primary-foreground: #06122e;
+  --sidebar-accent: #172a52;
+  --sidebar-accent-foreground: #b9d0ff;
+  --sidebar-border: #25314a;
+  --sidebar-ring: #6c9bff;
   color-scheme: dark;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not(.light) {
-    --background: #0b0f14;
-    --foreground: #e6ebf2;
-    --card: #121820;
-    --card-foreground: #e6ebf2;
-    --popover: #121820;
-    --popover-foreground: #e6ebf2;
-    --primary: #3cc4dc;
-    --primary-foreground: #04212a;
-    --secondary: #1a232e;
-    --secondary-foreground: #e6ebf2;
-    --muted: #171f29;
-    --muted-foreground: #98a5b7;
-    --accent: #12303a;
-    --accent-foreground: #8fe0ef;
-    --destructive: #f87171;
-    --success: #4ade80;
-    --success-foreground: #04210f;
-    --border: #243040;
-    --input: #303d50;
-    --ring: #3cc4dc;
-    --chart-1: #3cc4dc;
-    --chart-2: #4ade80;
-    --chart-3: #fbbf24;
-    --chart-4: #98a5b7;
-    --chart-5: #e6ebf2;
-    --sidebar: #0f141b;
-    --sidebar-foreground: #e6ebf2;
-    --sidebar-primary: #3cc4dc;
-    --sidebar-primary-foreground: #04212a;
-    --sidebar-accent: #12303a;
-    --sidebar-accent-foreground: #8fe0ef;
-    --sidebar-border: #243040;
-    --sidebar-ring: #3cc4dc;
-    color-scheme: dark;
-  }
-}
 
 @layer base {
   * {
