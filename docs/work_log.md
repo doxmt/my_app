@@ -148,3 +148,14 @@
 - `docs/plans/nextjs-web.md`, `docs/plans/web-responsive-layout.md`(대체됨 표기), `docs/plans/open-questions.md`
 - `docs/adr.md`(ADR-019), `docs/roadmap.md`, `docs/architecture.md`, `docs/overview.md`, `CLAUDE.md`
 - (미커밋) `webapp/components/**` UI 재설계, `webapp/app/globals.css`, `webapp/app/layout.tsx`, `.claude/agents/designer.md`
+
+## 2026-09-30
+- PR #25(Next.js 웹 전환 + UI 웹사이트 구조 재설계) CI 통과 확인 후 squash merge, 이슈 #24 닫힘, develop 동기화 (`7adf84a`)
+- 웹 색상 변경(이슈 #26, PR #27 열림·CI 통과): 배경 흰색 `#ffffff`, 강조색 녹색 → 블루 `#2563eb`(사용자가 "녹색 대신 괜찮은 색" 요청으로 선택), 중립색 회색 톤. OS 다크 모드 자동 추종을 끄고 항상 라이트(`.dark` 클래스 수동 지원 유지). 로그인 소셜 버튼 색은 변경 없음
+- 모바일 앱 테마를 웹과 통일(이슈 #28, 브랜치 `design/28-app-theme`): `lib/app/theme.dart`를 시드 기반 녹색에서 웹 토큰 기반 명시적 `ColorScheme`(라이트 흰 배경 + 블루, 다크는 시스템 따라감)으로 교체하고 카드·입력·버튼·앱바·하단 탭의 모서리 8dp/테두리/틴트 제거를 웹에 맞춤. 화면 구성·폰트는 변경 없음. `flutter analyze`/`flutter test`(63개) 통과, 시뮬레이터 확인은 아직. **미커밋**
+- 모바일 팔레트 값은 임시 테스트로 `ColorScheme.fromSeed`를 덤프해 얻은 뒤 테스트 파일 삭제
+
+### 주요 변경 파일
+- `webapp/app/globals.css` (PR #27)
+- `lib/app/theme.dart` (미커밋, 브랜치 `design/28-app-theme`)
+- `docs/work_log.md`, `docs/current_state.md`, `docs/adr.md`(ADR-020)
