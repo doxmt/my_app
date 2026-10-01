@@ -1,6 +1,7 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../domain/pdf_extraction_client.dart';
 import '../domain/resume.dart';
@@ -8,7 +9,10 @@ import 'resume_providers.dart';
 
 /// 이력서 입력 화면. 텍스트 붙여넣기 또는 PDF 업로드로 이력서를 채우고 저장한다.
 class ResumePage extends ConsumerWidget {
-  const ResumePage({super.key});
+  const ResumePage({super.key, this.returnToInterview = false});
+
+  /// 모의면접에서 이력서 입력으로 넘어온 경우 true. 저장하면 모의면접으로 돌아간다.
+  final bool returnToInterview;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -31,16 +35,17 @@ class ResumePage extends ConsumerWidget {
             ],
           ),
         ),
-        data: (resume) => _ResumeForm(initial: resume),
+        data: (resume) => _ResumeForm(initial: resume, returnToInterview: returnToInterview),
       ),
     );
   }
 }
 
 class _ResumeForm extends ConsumerStatefulWidget {
-  const _ResumeForm({required this.initial});
+  const _ResumeForm({required this.initial, required this.returnToInterview});
 
   final Resume? initial;
+  final bool returnToInterview;
 
   @override
   ConsumerState<_ResumeForm> createState() => _ResumeFormState();
@@ -105,6 +110,9 @@ class _ResumeFormState extends ConsumerState<_ResumeForm> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('이력서를 저장했습니다.')));
+      if (widget.returnToInterview) {
+        context.go('/interview');
+      }
     }
   }
 

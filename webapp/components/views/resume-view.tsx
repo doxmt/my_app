@@ -1,6 +1,7 @@
 "use client";
 
 import { FileText } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { MeLayout } from "@/components/me-layout";
 import { ErrorState, LoadingState } from "@/components/page-state";
@@ -10,6 +11,7 @@ import { useUserId } from "@/components/user-id-provider";
 import { getResumeRepository } from "@/lib/data/repositories";
 import type { Resume, ResumeSourceType } from "@/lib/models";
 import { extractPdfText, PdfExtractionError } from "@/lib/resume/pdf-client";
+import { resumeReturnPath } from "@/lib/resume/return-path";
 import { getBrowserClient } from "@/lib/supabase/client";
 import { useAsync } from "@/lib/use-async";
 
@@ -35,6 +37,7 @@ export function ResumeView() {
 
 function ResumeForm({ initial }: { initial: Resume | null }) {
   const { userId } = useUserId();
+  const router = useRouter();
   const fileInput = useRef<HTMLInputElement>(null);
   const [text, setText] = useState(initial?.text ?? "");
   const [sourceType, setSourceType] = useState<ResumeSourceType>(initial?.sourceType ?? "paste");
@@ -68,6 +71,9 @@ function ResumeForm({ initial }: { initial: Resume | null }) {
         updatedAt: new Date().toISOString(),
       });
       setMessage({ text: "이력서를 저장했습니다.", isError: false });
+      // 모의면접에서 넘어온 경우(?next=/interview) 저장 후 그 화면으로 돌아간다.
+      const returnPath = resumeReturnPath(window.location.search);
+      if (returnPath) router.push(returnPath);
     } catch {
       setMessage({
         text: "이력서를 저장하지 못했습니다. 다시 시도해주세요.",

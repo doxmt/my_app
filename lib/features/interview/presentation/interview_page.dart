@@ -44,7 +44,7 @@ class InterviewPage extends ConsumerWidget {
                   const Text('모의면접을 시작하려면 이력서를 먼저 입력해주세요.'),
                   const SizedBox(height: 8),
                   ElevatedButton(
-                    onPressed: () => context.push('/me/resume'),
+                    onPressed: () => context.push('/me/resume?from=interview'),
                     child: const Text('이력서 입력하기'),
                   ),
                 ],

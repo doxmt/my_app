@@ -61,7 +61,7 @@ export function InterviewView() {
         <div className="mx-auto flex max-w-md flex-col items-center gap-4 rounded-xl border border-dashed bg-card py-14 text-center">
           <FileText className="size-7 text-muted-foreground" aria-hidden />
           <p className="text-sm">모의면접을 시작하려면 이력서를 먼저 입력해주세요.</p>
-          <Link href="/me/resume" className={buttonVariants()}>
+          <Link href="/me/resume?next=/interview" className={buttonVariants()}>
             이력서 입력하기
           </Link>
         </div>
