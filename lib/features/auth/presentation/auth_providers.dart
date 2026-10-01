@@ -7,7 +7,6 @@ import '../../../core/storage/local_json_store.dart';
 import '../../../core/supabase/supabase_client_provider.dart';
 import '../../resume/data/local_resume_repository.dart';
 import '../../wrong_notes/data/local_wrong_note_repository.dart';
-import '../data/apple_auth_client.dart';
 import '../data/auth_actions.dart';
 import '../data/google_auth_client.dart';
 import '../data/local_data_migration_service.dart';
@@ -29,14 +28,12 @@ final googleAuthClientProvider = Provider<GoogleAuthClient>((ref) {
   );
 });
 
-final appleAuthClientProvider = Provider<AppleAuthClient>((ref) => AppleAuthClient());
 
 final authActionsProvider = Provider<AuthActions>((ref) {
   final config = ref.watch(appConfigProvider);
   return AuthActions(
     client: ref.watch(supabaseClientProvider),
     googleAuthClient: ref.watch(googleAuthClientProvider),
-    appleAuthClient: ref.watch(appleAuthClientProvider),
     authRedirectUrl: config.authRedirectUrl,
   );
 });

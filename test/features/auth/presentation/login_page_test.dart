@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_app/features/auth/data/apple_auth_client.dart';
 import 'package:my_app/features/auth/data/auth_actions.dart';
 import 'package:my_app/features/auth/data/google_auth_client.dart';
 import 'package:my_app/features/auth/presentation/auth_providers.dart';
@@ -25,7 +24,6 @@ Widget _app({ThemeMode mode = ThemeMode.light}) {
             authOptions: const AuthClientOptions(autoRefreshToken: false),
           ),
           googleAuthClient: FakeGoogleAuthClient(),
-          appleAuthClient: AppleAuthClient(),
           authRedirectUrl: 'app://login-callback',
         ),
       ),
@@ -44,21 +42,22 @@ bool _hasAsset(String name) => find.byWidgetPredicate(
     ).evaluate().isNotEmpty;
 
 void main() {
-  testWidgets('provider 버튼이 Google, Apple, Kakao, GitHub 순서로 표시된다', (tester) async {
+  testWidgets('provider 버튼이 Kakao, Google, GitHub 순서로 표시되고 Apple은 없다', (tester) async {
     await tester.pumpWidget(_app());
 
-    final labels = ['Google 계정으로 로그인', 'Apple로 로그인', '카카오 로그인', 'GitHub로 로그인'];
+    final labels = ['카카오 로그인', 'Google 계정으로 로그인', 'GitHub로 로그인'];
     for (final l in labels) {
       expect(find.text(l), findsOneWidget);
     }
     final ys = [for (final l in labels) tester.getTopLeft(find.text(l)).dy];
-    expect(ys[0] < ys[1] && ys[1] < ys[2] && ys[2] < ys[3], isTrue);
+    expect(ys[0] < ys[1] && ys[1] < ys[2], isTrue);
+    expect(find.text('Apple로 로그인'), findsNothing);
   });
 
-  testWidgets('4개 버튼의 높이가 모두 44다', (tester) async {
+  testWidgets('3개 버튼의 높이가 모두 44다', (tester) async {
     await tester.pumpWidget(_app());
 
-    for (final type in [GoogleLoginButton, AppleLoginButton, KakaoLoginButton, GithubLoginButton]) {
+    for (final type in [KakaoLoginButton, GoogleLoginButton, GithubLoginButton]) {
       expect(tester.getSize(find.byType(type)).height, 44);
     }
   });
