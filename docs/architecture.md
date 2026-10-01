@@ -4,7 +4,7 @@
 
 - **앱**: Flutter (Android / iOS), Riverpod(상태관리), go_router(라우팅). Web은 Flutter 웹 빌드가 컷오버 전까지 Production, 컷오버 후에는 아래 Next.js 웹이 대체한다 (ADR-019)
 - **웹**: `webapp/` Next.js 16 (App Router, TypeScript, Tailwind v4 + shadcn/ui, Vitest). 클라이언트 컴포넌트 중심, 비회원 데이터는 localStorage. Supabase는 `@supabase/ssr`(브라우저 `createBrowserClient`, 서버 `createServerClient`), 세션 갱신은 `proxy.ts`(`getClaims()`). env는 `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` / `ALLOWED_ORIGINS`(PDF 함수 CORS)
-- **백엔드**: Supabase — Postgres(+pgvector), Auth(OAuth: Google/GitHub/Apple/Kakao), Edge Functions(Deno)
+- **백엔드**: Supabase — Postgres(+pgvector), Auth(OAuth: Google/GitHub/Kakao, ADR-022), Edge Functions(Deno)
 - **LLM**: Anthropic / OpenAI — Edge Function 내부 어댑터로 교체 가능 (`LLM_PROVIDER` env var)
 - **PDF 추출**: Vercel Node 서버리스 함수 (`unpdf` 라이브러리). 컷오버 전에는 루트 `api/parse-pdf.ts`(Flutter 웹과 함께 배포), 이후에는 `webapp/app/api/parse-pdf/route.ts`(Route Handler, raw 바이트 본문, 같은 경로 `/api/parse-pdf`)가 이어받고 모바일 앱도 이 엔드포인트를 쓴다
 - **어드민**: 별도 웹앱, Vite + React + TypeScript, Tailwind v4 + shadcn/ui (M5-a). 로그인은 고정 관리자 계정 + 비밀번호 전용 화면(`signInWithPassword` 내부 호출, ADR-016)
@@ -75,7 +75,7 @@ admin/                 Vite+React 어드민 웹앱 (M5-a), 별도 Vercel 프로�
 | `question_candidates` | 수집된 문제 후보 (`duplicate_of`, `similarity_score`, `status`) | 어드민만 |
 | `practice_attempts` | 답변 시도 기록 (회원) | 본인만 |
 | `wrong_notes` | 오답노트 (회원, `unique(user_id, question_id)`) | 본인만 |
-| `resumes` | 이력서 (회원, `source_type`, `extracted_text`) | 본인만 |
+| `resumes` | 이력서 (회원, `source_type`, `extracted_text`, `self_introduction`) | 본인만 |
 | `interview_sessions` | 모의면접 세션 (회원, `provider`, `model`, `status`) | 본인만 |
 | `interview_messages` | 대화 메시지 (회원) | 세션 소유자만 (join 정책) |
 | `daily_usage` | 회원 일일 사용량 `PK(user_id, usage_date)` | 본인 읽기만, 쓰기는 RPC |
@@ -102,10 +102,15 @@ IP 한도는 같은 IP를 여러 사람이 쓰는 경우(학교, 회사)를 고�
 텍스트 붙여넣기 → 그대로 사용
 PDF → Vercel 파싱 함수(`/api/parse-pdf`)로 직접 전송 → 추출된 텍스트 반환 (웹은 같은 오리진, 모바일 앱은 `PDF_PARSE_BASE_URL`)
   → 비회원: 기기에 저장 / 회원: resumes 테이블에 저장
+자기소개: 이력서에서 "자기소개" 섹션을 규칙으로 찾아(앱·웹 동일 추출기) 칸을 채우고 사용자가 수정 → `self_introduction`(최대 1500자)로 함께 저장
+
+[모의면접 시작 — ADR-023]
+지원 직무(필수) + 회사 채용공고(선택, 3000자) 입력, 분야 선택 없음
+"자기소개로 시작하기"를 켜면 저장된 자기소개(수정 가능)를 첫 사용자 메시지로 보내 면접관이 꼬리 질문 (시작 화면에서 넘어온 한 번만 호출, 재진입 시 자동 호출 없음)
 
 [모의면접 — 비회원]
 메시지 전송 → 앱이 `package:http`로 interview-chat Function URL에 직접 POST
-  (publishable key + X-Device-Id 헤더, 본문에 이력서 텍스트·카테고리·이전 대화 포함)
+  (publishable key + X-Device-Id 헤더, 본문에 이력서 텍스트·직무·채용공고(선택)·이전 대화 포함. `categoryName`은 예전 앱 호환용 선택값)
   → Edge Function에서 기기 ID·IP 해시로 increment_guest_usage (초과 시 429)
   → 이전 대화 길이 제한 확인 → 프롬프트 구성 → LlmProvider.streamChat → SSE 스트리밍 응답
   → 앱이 응답을 청크 단위로 읽어 파싱 후 대화를 기기에 저장 (서버에는 사용량만 남음)
