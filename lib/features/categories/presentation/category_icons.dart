@@ -11,6 +11,8 @@ IconData iconForSlug(String slug) {
       return Icons.dns;
     case 'ai':
       return Icons.smart_toy;
+    case 'ml':
+      return Icons.model_training;
     case 'mobile':
       return Icons.smartphone;
     case 'devops':

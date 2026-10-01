@@ -1,4 +1,4 @@
-import { Bot, Cloud, Cpu, Globe, LayoutGrid, Server, Smartphone, type LucideIcon } from "lucide-react";
+import { Bot, BrainCircuit, Cloud, Cpu, Globe, LayoutGrid, Server, Smartphone, type LucideIcon } from "lucide-react";
 
 /** 분야 slug에 대응하는 아이콘. 알려지지 않은 slug는 기본 아이콘. */
 const ICONS: Record<string, LucideIcon> = {
@@ -6,6 +6,7 @@ const ICONS: Record<string, LucideIcon> = {
   frontend: Globe,
   backend: Server,
   ai: Bot,
+  ml: BrainCircuit,
   mobile: Smartphone,
   devops: Cloud,
 };
