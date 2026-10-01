@@ -101,7 +101,7 @@ async function handleMemberUsage(
   userId: string,
 ): Promise<Response> {
   try {
-    const freeLimit = await fetchMemberLimit(client);
+    const freeLimit = await fetchMemberLimit(client, userId);
     const today = new Date().toISOString().slice(0, 10);
 
     const { data, error } = await client
@@ -296,7 +296,7 @@ async function handleMemberChat(
 ): Promise<Response> {
   let freeLimit: number;
   try {
-    freeLimit = await fetchMemberLimit(client);
+    freeLimit = await fetchMemberLimit(client, userId);
   } catch {
     return jsonResponse(500, { code: 'RATE_LIMIT_CONFIG_FAILED', message: '한도 설정을 불러오지 못했습니다.' });
   }

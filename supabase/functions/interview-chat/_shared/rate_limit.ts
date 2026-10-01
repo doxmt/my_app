@@ -32,7 +32,28 @@ export async function fetchRateLimitConfig(client: SupabaseClientLike): Promise<
   return { guestDeviceLimit, guestIpLimit };
 }
 
-export async function fetchMemberLimit(client: SupabaseClientLike): Promise<number> {
+/**
+ * 회원의 일일 면접 메시지 한도.
+ * `userId`를 주면 `usage_overrides`(계정별 한도)를 먼저 보고, 없으면 `rate_limit_config`의 free 값을 쓴다.
+ * 계정별 한도 조회가 실패하면 기본값으로 대체하지 않고 에러를 던진다(조용히 한도가 풀리거나 바뀌지 않게).
+ */
+export async function fetchMemberLimit(client: SupabaseClientLike, userId?: string): Promise<number> {
+  if (userId) {
+    const { data: override, error: overrideError } = await client
+      .from('usage_overrides')
+      .select('daily_interview_messages')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (overrideError) {
+      throw new Error(`계정별 한도 조회 실패: ${overrideError.message}`);
+    }
+
+    if (override) {
+      return (override as { daily_interview_messages: number }).daily_interview_messages;
+    }
+  }
+
   const { data, error } = await client
     .from('rate_limit_config')
     .select('daily_interview_messages')
