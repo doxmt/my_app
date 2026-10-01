@@ -20,11 +20,14 @@ export function MicButton({
   value,
   onChange,
   disabled = false,
+  onListeningChange,
   className,
 }: {
   value: string;
   onChange: (next: string) => void;
   disabled?: boolean;
+  /** 듣는 중 여부가 바뀔 때 알린다(입력창 강조 등에 쓴다). */
+  onListeningChange?: (listening: boolean) => void;
   className?: string;
 }) {
   // 서버 렌더에서는 false, 브라우저에서 지원 여부를 읽는다(하이드레이션 후 갱신).
@@ -50,6 +53,10 @@ export function MicButton({
   useEffect(() => {
     if (disabled) recognitionRef.current?.abort();
   }, [disabled]);
+
+  useEffect(() => {
+    onListeningChange?.(listening);
+  }, [listening, onListeningChange]);
 
   useEffect(() => {
     if (!error) return;
@@ -108,16 +115,26 @@ export function MicButton({
         aria-label={label}
         title={label}
         className={cn(
-          "grid size-10 place-items-center rounded-lg border bg-card text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50",
-          listening && "animate-pulse border-destructive bg-destructive/10 text-destructive hover:bg-destructive/15",
+          "relative grid size-10 place-items-center rounded-lg border bg-card text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50",
+          listening && "border-destructive bg-destructive text-white hover:bg-destructive/90 hover:text-white",
         )}
       >
-        {supported ? <Mic className="size-4" aria-hidden /> : <MicOff className="size-4" aria-hidden />}
+        {listening && <span aria-hidden className="absolute inset-0 animate-ping rounded-lg bg-destructive/50" />}
+        {supported ? <Mic className="relative size-4" aria-hidden /> : <MicOff className="size-4" aria-hidden />}
       </button>
       {listening && (
-        <span role="status" className="sr-only">
-          음성을 듣고 있습니다
-        </span>
+        <>
+          <span
+            aria-hidden
+            className="absolute right-0 bottom-full z-30 mb-2 flex items-center gap-1.5 rounded-full bg-destructive px-3 py-1 text-xs font-medium whitespace-nowrap text-white shadow-lg"
+          >
+            <span className="size-2 animate-pulse rounded-full bg-white" />
+            듣는 중… 말씀하세요
+          </span>
+          <span role="status" className="sr-only">
+            음성을 듣고 있습니다
+          </span>
+        </>
       )}
       {error && (
         <p

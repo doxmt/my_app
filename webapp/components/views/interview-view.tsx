@@ -8,6 +8,7 @@ import { Breadcrumb, ErrorState, LoadingState, Page, PageHeader } from "@/compon
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useUserId } from "@/components/user-id-provider";
+import { cn } from "@/lib/utils";
 import { getResumeRepository } from "@/lib/data/repositories";
 import { fetchTopLevelCategories } from "@/lib/data/supabase-data";
 import { getDeviceId } from "@/lib/device-id";
@@ -195,6 +196,7 @@ function ChatView({
   const { userId } = useUserId();
   const [messages, setMessages] = useState<InterviewMessage[]>(session.messages);
   const [input, setInput] = useState("");
+  const [listening, setListening] = useState(false);
   const [sending, setSending] = useState(false);
   const [draftReply, setDraftReply] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -356,14 +358,19 @@ function ChatView({
           }}
         >
           <Input
-            className="h-10"
+            className={cn("h-10", listening && "border-destructive ring-2 ring-destructive/30")}
             aria-label="메시지"
             value={input}
             onChange={(event) => setInput(event.target.value)}
             disabled={sending || blocked}
-            placeholder="메시지를 입력하세요"
+            placeholder={listening ? "듣고 있어요. 말씀하세요…" : "메시지를 입력하세요"}
           />
-          <MicButton value={input} onChange={setInput} disabled={sending || blocked} />
+          <MicButton
+            value={input}
+            onChange={setInput}
+            disabled={sending || blocked}
+            onListeningChange={setListening}
+          />
           <Button type="submit" size="icon-lg" className="size-10" aria-label="보내기" disabled={sending || blocked}>
             <Send aria-hidden />
           </Button>

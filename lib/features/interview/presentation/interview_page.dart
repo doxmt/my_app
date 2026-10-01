@@ -196,6 +196,7 @@ class _ChatView extends ConsumerStatefulWidget {
 class _ChatViewState extends ConsumerState<_ChatView> {
   late List<InterviewMessage> _messages;
   final _inputController = TextEditingController();
+  final _listening = ValueNotifier<bool>(false);
 
   bool _isSending = false;
   String _draftReply = '';
@@ -215,6 +216,7 @@ class _ChatViewState extends ConsumerState<_ChatView> {
   @override
   void dispose() {
     _inputController.dispose();
+    _listening.dispose();
     super.dispose();
   }
 
@@ -411,17 +413,25 @@ class _ChatViewState extends ConsumerState<_ChatView> {
             child: Row(
               children: [
                 Expanded(
-                  child: TextField(
-                    controller: _inputController,
-                    enabled: !_isSending && !isBlocked,
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      hintText: '메시지를 입력하세요',
+                  child: ValueListenableBuilder<bool>(
+                    valueListenable: _listening,
+                    builder: (context, listening, _) => TextField(
+                      controller: _inputController,
+                      enabled: !_isSending && !isBlocked,
+                      decoration: InputDecoration(
+                        border: const OutlineInputBorder(),
+                        hintText: listening ? '듣고 있어요. 말씀하세요…' : '메시지를 입력하세요',
+                        enabledBorder: listening
+                            ? OutlineInputBorder(
+                                borderSide: BorderSide(color: Theme.of(context).colorScheme.error, width: 2),
+                              )
+                            : null,
+                      ),
+                      onSubmitted: (_) => _submit(),
                     ),
-                    onSubmitted: (_) => _submit(),
                   ),
                 ),
-                DictationButton(controller: _inputController, enabled: !_isSending && !isBlocked),
+                DictationButton(controller: _inputController, listening: _listening, enabled: !_isSending && !isBlocked),
                 IconButton(
                   icon: const Icon(Icons.send),
                   onPressed: _isSending || isBlocked ? null : _submit,

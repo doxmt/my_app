@@ -9,6 +9,7 @@ import { ErrorState, LoadingState, Page, PageHeader } from "@/components/page-st
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useUserId } from "@/components/user-id-provider";
+import { cn } from "@/lib/utils";
 import { getWrongNoteRepository } from "@/lib/data/repositories";
 import { fetchCategoryBySlug, fetchQuestionsByCategory } from "@/lib/data/supabase-data";
 import type { PracticeMode, Question } from "@/lib/models";
@@ -163,6 +164,7 @@ function ModelAnswer({ question }: { question: Question }) {
 function PracticeBody({ question, categoryId }: { question: Question; categoryId: string }) {
   const { userId } = useUserId();
   const [answer, setAnswer] = useState("");
+  const [listening, setListening] = useState(false);
   const [revealed, setRevealed] = useState(false);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [saved, setSaved] = useState(false);
@@ -192,7 +194,7 @@ function PracticeBody({ question, categoryId }: { question: Question; categoryId
           <h2 id="my-answer-heading" className="font-mono text-xs text-muted-foreground">
             내 답변
           </h2>
-          <MicButton value={answer} onChange={setAnswer} disabled={revealed} />
+          <MicButton value={answer} onChange={setAnswer} disabled={revealed} onListeningChange={setListening} />
         </div>
         <Textarea
           value={answer}
@@ -200,8 +202,8 @@ function PracticeBody({ question, categoryId }: { question: Question; categoryId
           disabled={revealed}
           rows={10}
           aria-labelledby="my-answer-heading"
-          className="min-h-52 leading-relaxed"
-          placeholder="답변을 입력하세요"
+          className={cn("min-h-52 leading-relaxed", listening && "border-destructive ring-2 ring-destructive/30")}
+          placeholder={listening ? "듣고 있어요. 말씀하세요…" : "답변을 입력하세요"}
         />
         {!revealed && (
           <div className="mt-4 flex justify-end">
