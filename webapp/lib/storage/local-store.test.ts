@@ -56,9 +56,34 @@ describe("local-store (Flutter 호환 형식)", () => {
   it("resume: Flutter 형식 JSON을 읽고 같은 형식으로 쓴다", () => {
     const storage = fakeStorage({ resume: JSON.stringify({ version: 1, items: [resumeJson] }) });
     const resume = readResume(storage);
-    expect(resume).toEqual({ sourceType: "paste", text: "이력서 본문", updatedAt: "2026-09-29T01:02:03.000" });
+    expect(resume).toEqual({
+      sourceType: "paste",
+      text: "이력서 본문",
+      updatedAt: "2026-09-29T01:02:03.000",
+      selfIntroduction: "",
+    });
     writeResume(resume, storage);
     expect(JSON.parse(storage.data.resume)).toEqual({ version: 1, items: [resumeJson] });
+  });
+
+  it("resume: 자기소개는 비어 있지 않을 때만 self_introduction 키로 쓰고 읽는다", () => {
+    const storage = fakeStorage();
+    writeResume(
+      { sourceType: "paste", text: "이력서 본문", updatedAt: "2026-09-29T01:02:03.000", selfIntroduction: "안녕하세요" },
+      storage,
+    );
+    expect(JSON.parse(storage.data.resume).items[0]).toEqual({ ...resumeJson, self_introduction: "안녕하세요" });
+    expect(readResume(storage)?.selfIntroduction).toBe("안녕하세요");
+  });
+
+  it("resume: 자기소개가 없으면 키를 쓰지 않고 예전 데이터는 빈 문자열로 읽는다", () => {
+    const storage = fakeStorage();
+    writeResume(
+      { sourceType: "paste", text: "이력서 본문", updatedAt: "2026-09-29T01:02:03.000", selfIntroduction: "" },
+      storage,
+    );
+    expect(JSON.parse(storage.data.resume).items[0]).not.toHaveProperty("self_introduction");
+    expect(readResume(storage)?.selfIntroduction).toBe("");
   });
 
   it("resume: null을 쓰면 빈 items를 남긴다", () => {

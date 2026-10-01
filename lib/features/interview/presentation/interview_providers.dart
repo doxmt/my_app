@@ -19,6 +19,26 @@ final interviewSessionProvider = FutureProvider<InterviewSession?>((ref) {
   return ref.watch(interviewRepositoryProvider).fetch();
 });
 
+/// 시작 화면에서 "자기소개로 시작하기"를 고른 직후, 채팅 화면이 면접관 응답을 한 번 요청할 첫 메시지.
+/// 메모리에만 두고 채팅 화면이 꺼내 가며 비운다. 저장된 세션만 보고 자동으로 LLM을 호출하지 않기 위함이다.
+class PendingFirstMessageNotifier extends Notifier<String?> {
+  @override
+  String? build() => null;
+
+  void set(String message) => state = message;
+
+  /// 값을 꺼내고 비운다. 이미 비어 있으면 null.
+  String? take() {
+    final message = state;
+    state = null;
+    return message;
+  }
+}
+
+final pendingFirstMessageProvider = NotifierProvider<PendingFirstMessageNotifier, String?>(
+  PendingFirstMessageNotifier.new,
+);
+
 final interviewChatClientProvider = Provider<InterviewChatClient>((ref) {
   final config = ref.watch(appConfigProvider);
   final client = HttpInterviewChatClient(

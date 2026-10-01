@@ -14,12 +14,17 @@ import 'package:my_app/features/resume/domain/resume_repository.dart';
 import 'package:my_app/features/resume/presentation/resume_providers.dart';
 
 class FakeResumeRepository implements ResumeRepository {
+  FakeResumeRepository({this.selfIntroduction = ''});
+
+  final String selfIntroduction;
+
   @override
   Future<Resume?> fetch() async {
     return Resume(
       sourceType: ResumeSourceType.paste,
       text: '3년차 백엔드 개발자',
       updatedAt: DateTime.utc(2026, 9, 18),
+      selfIntroduction: selfIntroduction,
     );
   }
 
@@ -57,6 +62,10 @@ class StubInterviewChatClient implements InterviewChatClient {
   /// 마지막 요청에 실린 채용공고. 요청에 채용공고가 전달되는지 확인하는 용도.
   String? lastJobPosting;
 
+  /// streamReply 호출 횟수와 마지막 사용자 메시지. 자동 호출 여부를 확인하는 용도.
+  int callCount = 0;
+  String? lastMessage;
+
   @override
   Future<UsageStatus> fetchUsage() async => _initialUsage;
 
@@ -70,6 +79,8 @@ class StubInterviewChatClient implements InterviewChatClient {
     void Function(UsageStatus usage)? onUsage,
   }) {
     lastJobPosting = jobPosting;
+    callCount++;
+    lastMessage = message;
     onUsage?.call(const GuestUsageStatus(deviceRemaining: 8, ipRemaining: 38));
     return controller.stream;
   }
@@ -78,10 +89,11 @@ class StubInterviewChatClient implements InterviewChatClient {
 Widget _pageWith({
   required InterviewRepository interviewRepository,
   required InterviewChatClient chatClient,
+  String selfIntroduction = '',
 }) {
   return ProviderScope(
     overrides: [
-      resumeRepositoryProvider.overrideWithValue(FakeResumeRepository()),
+      resumeRepositoryProvider.overrideWithValue(FakeResumeRepository(selfIntroduction: selfIntroduction)),
       interviewRepositoryProvider.overrideWithValue(interviewRepository),
       interviewChatClientProvider.overrideWithValue(chatClient),
     ],
@@ -202,5 +214,88 @@ void main() {
 
     await chatClient.controller.close();
     await tester.pumpAndSettle();
+  });
+
+  testWidgets('자기소개로 시작하기를 켜면 저장된 자기소개로 미리 채워진다', (tester) async {
+    await tester.pumpWidget(
+      _pageWith(
+        interviewRepository: FakeInterviewRepository(null),
+        chatClient: StubInterviewChatClient(),
+        selfIntroduction: '안녕하세요, 백엔드 개발자입니다.',
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('안녕하세요, 백엔드 개발자입니다.'), findsNothing);
+
+    await tester.tap(find.text('자기소개로 시작하기'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('안녕하세요, 백엔드 개발자입니다.'), findsOneWidget);
+  });
+
+  testWidgets('자기소개로 시작하기를 켠 채 내용이 비어 있으면 시작되지 않는다', (tester) async {
+    final repository = FakeInterviewRepository(null);
+    final chatClient = StubInterviewChatClient();
+
+    await tester.pumpWidget(_pageWith(interviewRepository: repository, chatClient: chatClient));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField).at(0), '백엔드 개발자');
+    await tester.tap(find.text('자기소개로 시작하기'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('면접 시작'));
+    await tester.tap(find.text('면접 시작'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('자기소개를 입력해 주세요.'), findsOneWidget);
+    expect(await repository.fetch(), isNull);
+    expect(chatClient.callCount, 0);
+  });
+
+  testWidgets('자기소개로 시작하면 자기소개가 첫 메시지로 전송되고 한 번만 호출된다', (tester) async {
+    final repository = FakeInterviewRepository(null);
+    final chatClient = StubInterviewChatClient();
+
+    await tester.pumpWidget(
+      _pageWith(interviewRepository: repository, chatClient: chatClient, selfIntroduction: '저장된 자기소개'),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField).at(0), '백엔드 개발자');
+    await tester.tap(find.text('자기소개로 시작하기'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('면접 시작'));
+    await tester.tap(find.text('면접 시작'));
+    await tester.pump();
+    await tester.pump();
+    await tester.pump();
+
+    expect(chatClient.callCount, 1);
+    expect(chatClient.lastMessage, '저장된 자기소개');
+    expect(find.text('저장된 자기소개'), findsOneWidget);
+
+    chatClient.controller.add('1분 정도 더 설명해 주세요.');
+    await chatClient.controller.close();
+    await tester.pumpAndSettle();
+
+    expect(find.text('1분 정도 더 설명해 주세요.'), findsOneWidget);
+    final session = await repository.fetch();
+    expect(session?.messages.map((m) => m.role), [MessageRole.user, MessageRole.assistant]);
+    expect(chatClient.callCount, 1);
+  });
+
+  testWidgets('마지막 메시지가 사용자 메시지인 저장된 세션을 다시 열어도 자동으로 호출하지 않는다', (tester) async {
+    final session = InterviewSession(
+      jobTitle: '백엔드 개발자',
+      messages: [InterviewMessage(role: MessageRole.user, content: '자기소개입니다', createdAt: DateTime.utc(2026, 9, 18))],
+    );
+    final chatClient = StubInterviewChatClient();
+
+    await tester.pumpWidget(_pageWith(interviewRepository: FakeInterviewRepository(session), chatClient: chatClient));
+    await tester.pumpAndSettle();
+
+    expect(find.text('자기소개입니다'), findsOneWidget);
+    expect(chatClient.callCount, 0);
   });
 }

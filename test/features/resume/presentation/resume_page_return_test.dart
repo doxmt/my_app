@@ -43,7 +43,8 @@ void main() {
   testWidgets('모의면접에서 넘어온 경우 이력서를 저장하면 모의면접으로 돌아간다', (tester) async {
     await _pumpResumeFlow(tester, returnToInterview: true);
 
-    await tester.enterText(find.byType(TextField), '5년차 백엔드 개발자');
+    await tester.enterText(find.byType(TextField).first, '5년차 백엔드 개발자');
+    await tester.ensureVisible(find.text('저장'));
     await tester.tap(find.text('저장'));
     await tester.pumpAndSettle();
 
@@ -53,7 +54,8 @@ void main() {
   testWidgets('다른 경로에서 들어온 경우 이력서를 저장해도 이력서 화면에 머문다', (tester) async {
     await _pumpResumeFlow(tester, returnToInterview: false);
 
-    await tester.enterText(find.byType(TextField), '5년차 백엔드 개발자');
+    await tester.enterText(find.byType(TextField).first, '5년차 백엔드 개발자');
+    await tester.ensureVisible(find.text('저장'));
     await tester.tap(find.text('저장'));
     await tester.pumpAndSettle();
 

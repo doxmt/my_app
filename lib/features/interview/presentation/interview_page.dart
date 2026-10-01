@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/speech/dictation_button.dart';
+import '../../resume/domain/self_intro_extractor.dart';
 import '../../resume/presentation/resume_providers.dart';
 import '../domain/interview_chat_client.dart';
 import '../domain/interview_message.dart';
@@ -50,7 +51,7 @@ class InterviewPage extends ConsumerWidget {
               ),
             );
           }
-          return _InterviewBody(resumeText: resume.text);
+          return _InterviewBody(resumeText: resume.text, selfIntroduction: resume.selfIntroduction);
         },
       ),
     );
@@ -58,9 +59,10 @@ class InterviewPage extends ConsumerWidget {
 }
 
 class _InterviewBody extends ConsumerWidget {
-  const _InterviewBody({required this.resumeText});
+  const _InterviewBody({required this.resumeText, required this.selfIntroduction});
 
   final String resumeText;
+  final String selfIntroduction;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -83,7 +85,7 @@ class _InterviewBody extends ConsumerWidget {
       ),
       data: (session) {
         if (session == null) {
-          return _JobSetupForm(resumeText: resumeText);
+          return _JobSetupForm(selfIntroduction: selfIntroduction);
         }
         return _ChatView(session: session, resumeText: resumeText);
       },
@@ -92,9 +94,10 @@ class _InterviewBody extends ConsumerWidget {
 }
 
 class _JobSetupForm extends ConsumerStatefulWidget {
-  const _JobSetupForm({required this.resumeText});
+  const _JobSetupForm({required this.selfIntroduction});
 
-  final String resumeText;
+  /// 이력서에 저장된 자기소개. "자기소개로 시작하기"의 입력칸 초기값.
+  final String selfIntroduction;
 
   @override
   ConsumerState<_JobSetupForm> createState() => _JobSetupFormState();
@@ -103,9 +106,19 @@ class _JobSetupForm extends ConsumerStatefulWidget {
 class _JobSetupFormState extends ConsumerState<_JobSetupForm> {
   final _jobTitleController = TextEditingController();
   final _jobPostingController = TextEditingController();
+  late final TextEditingController _selfIntroController;
+  bool _startWithSelfIntro = false;
+  bool _showSelfIntroError = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _selfIntroController = TextEditingController(text: widget.selfIntroduction);
+  }
 
   @override
   void dispose() {
+    _selfIntroController.dispose();
     _jobTitleController.dispose();
     _jobPostingController.dispose();
     super.dispose();
@@ -117,12 +130,24 @@ class _JobSetupFormState extends ConsumerState<_JobSetupForm> {
       return;
     }
 
+    final selfIntro = _selfIntroController.text.trim();
+    if (_startWithSelfIntro && selfIntro.isEmpty) {
+      setState(() => _showSelfIntroError = true);
+      return;
+    }
+
+    // 자기소개로 시작하면 자기소개가 첫 사용자 메시지가 된다. 면접관 응답은 채팅 화면이 한 번만 요청한다.
     final session = InterviewSession(
       jobTitle: jobTitle,
       jobPosting: _jobPostingController.text.trim(),
-      messages: const [],
+      messages: _startWithSelfIntro
+          ? [InterviewMessage(role: MessageRole.user, content: selfIntro, createdAt: DateTime.now())]
+          : const [],
     );
     await ref.read(interviewRepositoryProvider).save(session);
+    if (_startWithSelfIntro) {
+      ref.read(pendingFirstMessageProvider.notifier).set(selfIntro);
+    }
     ref.invalidate(interviewSessionProvider);
   }
 
@@ -160,6 +185,36 @@ class _JobSetupFormState extends ConsumerState<_JobSetupForm> {
               hintText: '채용공고 텍스트를 붙여넣으세요.',
             ),
           ),
+          const SizedBox(height: 8),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('자기소개로 시작하기'),
+            subtitle: const Text('자기소개를 첫 답변으로 보내고, 면접관이 그 내용에서 꼬리 질문을 해요.'),
+            value: _startWithSelfIntro,
+            onChanged: (value) => setState(() {
+              _startWithSelfIntro = value;
+              _showSelfIntroError = false;
+            }),
+          ),
+          if (_startWithSelfIntro) ...[
+            const SizedBox(height: 8),
+            TextField(
+              controller: _selfIntroController,
+              minLines: 4,
+              maxLines: 8,
+              maxLength: maxSelfIntroductionLength,
+              onChanged: (_) {
+                if (_showSelfIntroError) {
+                  setState(() => _showSelfIntroError = false);
+                }
+              },
+              decoration: InputDecoration(
+                border: const OutlineInputBorder(),
+                hintText: '자기소개를 입력하세요.',
+                errorText: _showSelfIntroError ? '자기소개를 입력해 주세요.' : null,
+              ),
+            ),
+          ],
           const SizedBox(height: 16),
           ElevatedButton(onPressed: _start, child: const Text('면접 시작')),
         ],
@@ -196,6 +251,14 @@ class _ChatViewState extends ConsumerState<_ChatView> {
     super.initState();
     _messages = List.of(widget.session.messages);
     _loadInitialUsage();
+    // 시작 화면에서 자기소개로 시작한 경우에만 첫 응답을 한 번 요청한다. 재진입 땐 비어 있어 호출하지 않는다.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final first = ref.read(pendingFirstMessageProvider.notifier).take();
+      if (first != null) {
+        _requestReply(first);
+      }
+    });
   }
 
   @override

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../domain/pdf_extraction_client.dart';
 import '../domain/resume.dart';
+import '../domain/self_intro_extractor.dart';
 import 'resume_providers.dart';
 
 /// 이력서 입력 화면. 텍스트 붙여넣기 또는 PDF 업로드로 이력서를 채우고 저장한다.
@@ -53,20 +54,24 @@ class _ResumeForm extends ConsumerStatefulWidget {
 
 class _ResumeFormState extends ConsumerState<_ResumeForm> {
   late final TextEditingController _controller;
+  late final TextEditingController _selfIntroController;
   late ResumeSourceType _sourceType;
   bool _isExtracting = false;
   String? _errorMessage;
+  String? _selfIntroNotice;
 
   @override
   void initState() {
     super.initState();
     _controller = TextEditingController(text: widget.initial?.text ?? '');
+    _selfIntroController = TextEditingController(text: widget.initial?.selfIntroduction ?? '');
     _sourceType = widget.initial?.sourceType ?? ResumeSourceType.paste;
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    _selfIntroController.dispose();
     super.dispose();
   }
 
@@ -87,6 +92,9 @@ class _ResumeFormState extends ConsumerState<_ResumeForm> {
       setState(() {
         _controller.text = text;
         _sourceType = ResumeSourceType.pdf;
+        if (_selfIntroController.text.trim().isEmpty) {
+          _selfIntroController.text = extractSelfIntroduction(text);
+        }
       });
     } on PdfExtractionException catch (error) {
       setState(() => _errorMessage = error.message);
@@ -97,11 +105,32 @@ class _ResumeFormState extends ConsumerState<_ResumeForm> {
     }
   }
 
+  /// 입력칸이 이미 채워져 있으면 덮어쓴다. 덮어썼다는 사실은 안내 문구로 보여준다.
+  void _importSelfIntro() {
+    final extracted = extractSelfIntroduction(_controller.text);
+    setState(() {
+      if (extracted.isEmpty) {
+        _selfIntroNotice = '이력서에서 자기소개 항목을 찾지 못했어요. 직접 입력해 주세요.';
+        return;
+      }
+      final replaced = _selfIntroController.text.trim().isNotEmpty;
+      _selfIntroController.text = extracted;
+      _selfIntroNotice = replaced ? '이력서의 자기소개로 입력 내용을 바꿨어요.' : '이력서에서 자기소개를 가져왔어요.';
+    });
+  }
+
   Future<void> _save() async {
+    // 자기소개 칸이 비어 있으면 이력서에서 찾아 채운다. 이미 입력한 내용은 덮어쓰지 않는다.
+    var selfIntro = _selfIntroController.text.trim();
+    if (selfIntro.isEmpty) {
+      selfIntro = extractSelfIntroduction(_controller.text);
+      _selfIntroController.text = selfIntro;
+    }
     final resume = Resume(
       sourceType: _sourceType,
       text: _controller.text,
       updatedAt: DateTime.now(),
+      selfIntroduction: selfIntro,
     );
     await ref.read(resumeRepositoryProvider).save(resume);
     ref.invalidate(resumeProvider);
@@ -118,21 +147,19 @@ class _ResumeFormState extends ConsumerState<_ResumeForm> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Expanded(
-            child: TextField(
-              controller: _controller,
-              maxLines: null,
-              expands: true,
-              textAlignVertical: TextAlignVertical.top,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                hintText: '이력서 텍스트를 붙여넣으세요.',
-              ),
+          TextField(
+            controller: _controller,
+            minLines: 10,
+            maxLines: 16,
+            textAlignVertical: TextAlignVertical.top,
+            decoration: const InputDecoration(
+              border: OutlineInputBorder(),
+              hintText: '이력서 텍스트를 붙여넣으세요.',
             ),
           ),
           if (_errorMessage != null) ...[
@@ -159,7 +186,31 @@ class _ResumeFormState extends ConsumerState<_ResumeForm> {
             'PDF는 최대 4MB, 20페이지까지 불러올 수 있습니다.',
             style: Theme.of(context).textTheme.bodySmall,
           ),
+          const SizedBox(height: 24),
+          const Text('자기소개'),
+          const SizedBox(height: 4),
+          Text(
+            '면접을 자기소개로 시작할 때 쓰입니다.',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
           const SizedBox(height: 8),
+          TextField(
+            controller: _selfIntroController,
+            minLines: 4,
+            maxLines: 8,
+            maxLength: maxSelfIntroductionLength,
+            decoration: const InputDecoration(
+              border: OutlineInputBorder(),
+              hintText: '자기소개를 입력하세요.',
+            ),
+          ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton(onPressed: _importSelfIntro, child: const Text('이력서에서 가져오기')),
+          ),
+          if (_selfIntroNotice != null)
+            Text(_selfIntroNotice!, style: Theme.of(context).textTheme.bodySmall),
+          const SizedBox(height: 12),
           ElevatedButton(onPressed: _save, child: const Text('저장')),
         ],
       ),

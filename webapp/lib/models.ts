@@ -33,6 +33,8 @@ export type Resume = {
   sourceType: ResumeSourceType;
   text: string;
   updatedAt: string;
+  /** 면접을 자기소개로 시작할 때 쓰는 자기소개(최대 1500자, 없으면 빈 문자열). */
+  selfIntroduction: string;
 };
 
 export type MessageRole = "user" | "assistant";

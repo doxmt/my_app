@@ -48,6 +48,7 @@ class SupabaseMigrationGateway implements MigrationGateway {
       'user_id': userId,
       'source_type': resume.sourceType == ResumeSourceType.paste ? 'text' : 'pdf',
       'extracted_text': resume.text,
+      'self_introduction': resume.selfIntroduction.isEmpty ? null : resume.selfIntroduction,
     });
   }
 }

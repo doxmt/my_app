@@ -13,7 +13,12 @@ function note(id: string): WrongNote {
   };
 }
 
-const resume: Resume = { sourceType: "paste", text: "이력서", updatedAt: "2026-09-29T00:00:00.000Z" };
+const resume: Resume = {
+  sourceType: "paste",
+  text: "이력서",
+  updatedAt: "2026-09-29T00:00:00.000Z",
+  selfIntroduction: "안녕하세요",
+};
 
 function setup(options: {
   notes?: WrongNote[];
