@@ -4,30 +4,13 @@ import { ArrowRight, MessagesSquare, PencilLine } from "lucide-react";
 import Link from "next/link";
 import { CategoryIcon } from "@/components/category-icon";
 import { EmptyState, ErrorState, LoadingState, Page } from "@/components/page-state";
+import { PracticeDemo } from "@/components/practice-demo";
 import { buttonVariants } from "@/components/ui/button";
 import { fetchTopLevelCategories } from "@/lib/data/supabase-data";
 import { getBrowserClient } from "@/lib/supabase/client";
 import { useAsync } from "@/lib/use-async";
 
 const FEATURES = ["서술형 문제풀이", "자가 채점 · 오답노트", "이력서 기반 AI 모의면접"];
-
-const STEPS = [
-  {
-    no: "01",
-    title: "답변 작성",
-    body: "문제를 읽고 내 말로 먼저 답변을 씁니다.",
-  },
-  {
-    no: "02",
-    title: "모범답안 비교",
-    body: "공개된 모범답안과 내 답변을 비교합니다.",
-  },
-  {
-    no: "03",
-    title: "자가 채점",
-    body: "정답·오답을 표시하고 오답노트에 저장합니다.",
-  },
-];
 
 function Hero() {
   return (
@@ -86,23 +69,7 @@ function Hero() {
             <span className="size-2.5 rounded-full bg-border" />
             <span className="ml-3 font-mono text-xs text-muted-foreground">practice.md</span>
           </div>
-          <div className="p-5">
-            <p className="font-mono text-xs text-primary">Q.</p>
-            <p className="mt-1 text-[15px] leading-relaxed font-medium">
-              배열과 연결 리스트의 차이를 설명하고 각각 어떤 상황에 적합한지 말해보세요.
-            </p>
-            <ol className="mt-5 space-y-3 border-t pt-5">
-              {STEPS.map((step) => (
-                <li key={step.no} className="flex gap-3">
-                  <span className="font-mono text-xs leading-6 text-primary">{step.no}</span>
-                  <span>
-                    <span className="block text-sm font-semibold">{step.title}</span>
-                    <span className="block text-sm text-muted-foreground">{step.body}</span>
-                  </span>
-                </li>
-              ))}
-            </ol>
-          </div>
+          <PracticeDemo />
         </div>
       </Page>
     </section>
