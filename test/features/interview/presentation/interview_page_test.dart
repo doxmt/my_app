@@ -54,18 +54,22 @@ class StubInterviewChatClient implements InterviewChatClient {
   final controller = StreamController<String>();
   final UsageStatus _initialUsage;
 
+  /// 마지막 요청에 실린 채용공고. 요청에 채용공고가 전달되는지 확인하는 용도.
+  String? lastJobPosting;
+
   @override
   Future<UsageStatus> fetchUsage() async => _initialUsage;
 
   @override
   Stream<String> streamReply({
-    required String categoryName,
     required String jobTitle,
+    String jobPosting = '',
     required String resumeText,
     required List<InterviewMessage> history,
     required String message,
     void Function(UsageStatus usage)? onUsage,
   }) {
+    lastJobPosting = jobPosting;
     onUsage?.call(const GuestUsageStatus(deviceRemaining: 8, ipRemaining: 38));
     return controller.stream;
   }
@@ -88,8 +92,6 @@ Widget _pageWith({
 void main() {
   testWidgets('스트리밍 응답이 도착하는 대로 말풍선에 누적된다', (tester) async {
     final session = const InterviewSession(
-      categorySlug: 'cs',
-      categoryName: 'CS',
       jobTitle: '백엔드 개발자',
       messages: [],
     );
@@ -126,8 +128,6 @@ void main() {
 
   testWidgets('회원이면 free 한도 기준 남은 횟수 배너를 보여준다', (tester) async {
     final session = const InterviewSession(
-      categorySlug: 'cs',
-      categoryName: 'CS',
       jobTitle: '백엔드 개발자',
       messages: [],
     );
@@ -144,5 +144,63 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('오늘 남은 면접 횟수: 5회'), findsOneWidget);
+  });
+
+  testWidgets('새 면접은 분야 선택 없이 직무와 선택 채용공고만 받아 세션을 만든다', (tester) async {
+    final repository = FakeInterviewRepository(null);
+
+    await tester.pumpWidget(_pageWith(interviewRepository: repository, chatClient: StubInterviewChatClient()));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(ChoiceChip), findsNothing);
+    expect(find.text('지원 직무를 입력하세요'), findsOneWidget);
+    expect(find.textContaining('채용공고'), findsWidgets);
+
+    // 직무를 비우면 시작되지 않는다.
+    await tester.tap(find.text('면접 시작'));
+    await tester.pumpAndSettle();
+    expect(await repository.fetch(), isNull);
+
+    await tester.enterText(find.byType(TextField).at(0), '백엔드 개발자');
+    await tester.enterText(find.byType(TextField).at(1), 'Kotlin, Spring 우대');
+    await tester.tap(find.text('면접 시작'));
+    await tester.pumpAndSettle();
+
+    final session = await repository.fetch();
+    expect(session?.jobTitle, '백엔드 개발자');
+    expect(session?.jobPosting, 'Kotlin, Spring 우대');
+  });
+
+  testWidgets('채용공고 없이도 직무만으로 면접을 시작할 수 있다', (tester) async {
+    final repository = FakeInterviewRepository(null);
+
+    await tester.pumpWidget(_pageWith(interviewRepository: repository, chatClient: StubInterviewChatClient()));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField).at(0), '프론트엔드 개발자');
+    await tester.tap(find.text('면접 시작'));
+    await tester.pumpAndSettle();
+
+    final session = await repository.fetch();
+    expect(session?.jobTitle, '프론트엔드 개발자');
+    expect(session?.jobPosting, '');
+  });
+
+  testWidgets('저장된 채용공고가 면접 요청에 실려 간다', (tester) async {
+    const session = InterviewSession(jobTitle: '백엔드 개발자', jobPosting: 'Kotlin, Spring 우대', messages: []);
+    final chatClient = StubInterviewChatClient();
+
+    await tester.pumpWidget(_pageWith(interviewRepository: FakeInterviewRepository(session), chatClient: chatClient));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), '질문 있어요');
+    await tester.tap(find.byIcon(Icons.send));
+    await tester.pump();
+    await tester.pump();
+
+    expect(chatClient.lastJobPosting, 'Kotlin, Spring 우대');
+
+    await chatClient.controller.close();
+    await tester.pumpAndSettle();
   });
 }

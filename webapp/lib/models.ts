@@ -44,9 +44,9 @@ export type InterviewMessage = {
 };
 
 export type InterviewSession = {
-  categorySlug: string;
-  categoryName: string;
   jobTitle: string;
+  /** 선택. 사용자가 붙여넣은 회사 채용공고 텍스트(없으면 빈 문자열). */
+  jobPosting: string;
   messages: InterviewMessage[];
 };
 

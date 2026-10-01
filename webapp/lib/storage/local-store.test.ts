@@ -30,9 +30,8 @@ const wrongNoteJson = {
 };
 const resumeJson = { source_type: "paste", text: "이력서 본문", updated_at: "2026-09-29T01:02:03.000" };
 const sessionJson = {
-  category_slug: "backend",
-  category_name: "백엔드",
   job_title: "백엔드 개발자",
+  job_posting: "Kotlin, Spring 우대",
   messages: [{ role: "user", content: "안녕하세요", created_at: "2026-09-29T01:02:03.000" }],
 };
 
@@ -69,10 +68,29 @@ describe("local-store (Flutter 호환 형식)", () => {
     expect(readResume(storage)).toBeNull();
   });
 
+  it("interview_session: 분야 값이 들어 있던 예전 형식도 읽고, 채용공고가 없으면 job_posting을 쓰지 않는다", () => {
+    const legacy = {
+      category_slug: "backend",
+      category_name: "백엔드",
+      job_title: "백엔드 개발자",
+      messages: [],
+    };
+    const storage = fakeStorage({ interview_session: JSON.stringify({ version: 1, items: [legacy] }) });
+    const session = readInterviewSession(storage);
+    expect(session?.jobTitle).toBe("백엔드 개발자");
+    expect(session?.jobPosting).toBe("");
+    writeInterviewSession(session, storage);
+    expect(JSON.parse(storage.data.interview_session)).toEqual({
+      version: 1,
+      items: [{ job_title: "백엔드 개발자", messages: [] }],
+    });
+  });
+
   it("interview_session: Flutter 형식 JSON을 읽고 같은 형식으로 쓴다", () => {
     const storage = fakeStorage({ interview_session: JSON.stringify({ version: 1, items: [sessionJson] }) });
     const session = readInterviewSession(storage);
     expect(session?.jobTitle).toBe("백엔드 개발자");
+    expect(session?.jobPosting).toBe("Kotlin, Spring 우대");
     expect(session?.messages[0]).toEqual({ role: "user", content: "안녕하세요", createdAt: "2026-09-29T01:02:03.000" });
     writeInterviewSession(session, storage);
     expect(JSON.parse(storage.data.interview_session)).toEqual({ version: 1, items: [sessionJson] });

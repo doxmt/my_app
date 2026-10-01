@@ -123,8 +123,11 @@ async function handleMemberUsage(
 }
 
 interface ChatRequestBody {
+  /** 예전 앱 버전만 보낸다(지원 분야 선택은 없어졌다). */
   categoryName?: string;
   jobTitle?: string;
+  /** 선택. 회사 채용공고 텍스트. */
+  jobPosting?: string;
   resumeText?: string;
   history?: HistoryMessage[];
   message?: string;
@@ -140,10 +143,10 @@ async function handleChat(req: Request): Promise<Response> {
     return jsonResponse(400, { code: 'INVALID_BODY', message: '요청 본문이 올바르지 않습니다.' });
   }
 
-  if (!body.message || !body.categoryName || !body.jobTitle) {
+  if (!body.message || !body.jobTitle) {
     return jsonResponse(400, {
       code: 'MISSING_FIELDS',
-      message: 'message/categoryName/jobTitle이 모두 필요합니다.',
+      message: 'message/jobTitle이 모두 필요합니다.',
     });
   }
 
@@ -155,7 +158,7 @@ async function handleChat(req: Request): Promise<Response> {
   if (!body.resumeText) {
     return jsonResponse(400, {
       code: 'MISSING_FIELDS',
-      message: 'message/resumeText/categoryName/jobTitle이 모두 필요합니다.',
+      message: 'message/resumeText/jobTitle이 모두 필요합니다.',
     });
   }
 
@@ -206,6 +209,7 @@ async function handleChat(req: Request): Promise<Response> {
   const systemPrompt = buildSystemPrompt({
     categoryName: body.categoryName,
     jobTitle: body.jobTitle,
+    jobPosting: body.jobPosting,
     resumeText: body.resumeText,
   });
   const messages: ChatMessage[] = [
@@ -368,8 +372,9 @@ async function handleMemberChat(
     (historyRows as { role: 'user' | 'assistant'; content: string }[] | null) ?? [],
   );
   const systemPrompt = buildSystemPrompt({
-    categoryName: body.categoryName!,
+    categoryName: body.categoryName,
     jobTitle: body.jobTitle!,
+    jobPosting: body.jobPosting,
     resumeText,
   });
   const messages: ChatMessage[] = [

@@ -18,8 +18,6 @@ class FakeLocalJsonStore implements LocalJsonStore {
 
 InterviewSession _session({List<InterviewMessage> messages = const []}) {
   return InterviewSession(
-    categorySlug: 'cs',
-    categoryName: 'CS',
     jobTitle: '백엔드 개발자',
     messages: messages,
   );
@@ -40,7 +38,7 @@ void main() {
     await repository.save(_session());
     final session = await repository.fetch();
 
-    expect(session?.categorySlug, 'cs');
+    expect(session?.jobTitle, '백엔드 개발자');
   });
 
   test('clear 후에는 fetch가 다시 null을 돌려준다', () async {

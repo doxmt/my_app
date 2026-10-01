@@ -104,18 +104,17 @@ function sessionFromJson(json: unknown): InterviewSession {
   if (!isObject(json)) throw new Error("object expected");
   const messages = Array.isArray(json.messages) ? json.messages : [];
   return {
-    categorySlug: str(json.category_slug),
-    categoryName: str(json.category_name),
+    // 예전 버전에는 category_slug/category_name이 함께 저장돼 있었다. 지금은 쓰지 않아 읽지 않는다.
     jobTitle: str(json.job_title),
+    jobPosting: typeof json.job_posting === "string" ? json.job_posting : "",
     messages: messages.map(messageFromJson),
   };
 }
 
 function sessionToJson(session: InterviewSession): Json {
   return {
-    category_slug: session.categorySlug,
-    category_name: session.categoryName,
     job_title: session.jobTitle,
+    ...(session.jobPosting ? { job_posting: session.jobPosting } : {}),
     messages: session.messages.map((message) => ({
       role: message.role,
       content: message.content,

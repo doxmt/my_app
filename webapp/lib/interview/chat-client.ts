@@ -71,8 +71,9 @@ export async function fetchUsage(auth: ChatAuth): Promise<UsageStatus> {
 
 export type StreamReplyParams = {
   auth: ChatAuth;
-  categoryName: string;
   jobTitle: string;
+  /** 선택. 회사 채용공고 텍스트. */
+  jobPosting?: string;
   resumeText: string;
   history: InterviewMessage[];
   message: string;
@@ -88,8 +89,8 @@ export async function streamReply(params: StreamReplyParams): Promise<void> {
       method: "POST",
       headers: { ...authHeaders(params.auth), "Content-Type": "application/json" },
       body: JSON.stringify({
-        categoryName: params.categoryName,
         jobTitle: params.jobTitle,
+        ...(params.jobPosting?.trim() ? { jobPosting: params.jobPosting.trim() } : {}),
         resumeText: params.resumeText,
         history: params.history.map((item) => ({ role: item.role, content: item.content })),
         message: params.message,

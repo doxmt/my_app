@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/speech/dictation_button.dart';
-import '../../categories/presentation/categories_providers.dart';
 import '../../resume/presentation/resume_providers.dart';
 import '../domain/interview_chat_client.dart';
 import '../domain/interview_message.dart';
@@ -84,7 +83,7 @@ class _InterviewBody extends ConsumerWidget {
       ),
       data: (session) {
         if (session == null) {
-          return _CategoryJobForm(resumeText: resumeText);
+          return _JobSetupForm(resumeText: resumeText);
         }
         return _ChatView(session: session, resumeText: resumeText);
       },
@@ -92,38 +91,35 @@ class _InterviewBody extends ConsumerWidget {
   }
 }
 
-class _CategoryJobForm extends ConsumerStatefulWidget {
-  const _CategoryJobForm({required this.resumeText});
+class _JobSetupForm extends ConsumerStatefulWidget {
+  const _JobSetupForm({required this.resumeText});
 
   final String resumeText;
 
   @override
-  ConsumerState<_CategoryJobForm> createState() => _CategoryJobFormState();
+  ConsumerState<_JobSetupForm> createState() => _JobSetupFormState();
 }
 
-class _CategoryJobFormState extends ConsumerState<_CategoryJobForm> {
+class _JobSetupFormState extends ConsumerState<_JobSetupForm> {
   final _jobTitleController = TextEditingController();
-  String? _selectedCategorySlug;
-  String? _selectedCategoryName;
+  final _jobPostingController = TextEditingController();
 
   @override
   void dispose() {
     _jobTitleController.dispose();
+    _jobPostingController.dispose();
     super.dispose();
   }
 
   Future<void> _start() async {
-    final categorySlug = _selectedCategorySlug;
-    final categoryName = _selectedCategoryName;
     final jobTitle = _jobTitleController.text.trim();
-    if (categorySlug == null || categoryName == null || jobTitle.isEmpty) {
+    if (jobTitle.isEmpty) {
       return;
     }
 
     final session = InterviewSession(
-      categorySlug: categorySlug,
-      categoryName: categoryName,
       jobTitle: jobTitle,
+      jobPosting: _jobPostingController.text.trim(),
       messages: const [],
     );
     await ref.read(interviewRepositoryProvider).save(session);
@@ -132,40 +128,11 @@ class _CategoryJobFormState extends ConsumerState<_CategoryJobForm> {
 
   @override
   Widget build(BuildContext context) {
-    final categoriesAsync = ref.watch(categoriesProvider);
-
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text('지원 분야를 선택하세요'),
-          const SizedBox(height: 8),
-          categoriesAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (error, stackTrace) => const Text('분야 목록을 불러오지 못했습니다.'),
-            data: (categories) {
-              if (categories.isEmpty) {
-                return const Text('아직 등록된 분야가 없습니다.');
-              }
-              return Wrap(
-                spacing: 8,
-                children: categories.map((category) {
-                  return ChoiceChip(
-                    label: Text(category.name),
-                    selected: _selectedCategorySlug == category.slug,
-                    onSelected: (selected) {
-                      setState(() {
-                        _selectedCategorySlug = selected ? category.slug : null;
-                        _selectedCategoryName = selected ? category.name : null;
-                      });
-                    },
-                  );
-                }).toList(),
-              );
-            },
-          ),
-          const SizedBox(height: 16),
           const Text('지원 직무를 입력하세요'),
           const SizedBox(height: 8),
           TextField(
@@ -173,6 +140,24 @@ class _CategoryJobFormState extends ConsumerState<_CategoryJobForm> {
             decoration: const InputDecoration(
               border: OutlineInputBorder(),
               hintText: '예: 백엔드 개발자',
+            ),
+          ),
+          const SizedBox(height: 24),
+          const Text('회사 채용공고 (선택)'),
+          const SizedBox(height: 4),
+          Text(
+            '채용공고를 붙여넣으면 요구 역량과 우대사항에 맞춰 질문해요.',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _jobPostingController,
+            minLines: 5,
+            maxLines: 10,
+            maxLength: 3000,
+            decoration: const InputDecoration(
+              border: OutlineInputBorder(),
+              hintText: '채용공고 텍스트를 붙여넣으세요.',
             ),
           ),
           const SizedBox(height: 16),
@@ -278,8 +263,8 @@ class _ChatViewState extends ConsumerState<_ChatView> {
     final history = _messages.sublist(0, _messages.length - 1);
     final client = ref.read(interviewChatClientProvider);
     final stream = client.streamReply(
-      categoryName: widget.session.categoryName,
       jobTitle: widget.session.jobTitle,
+      jobPosting: widget.session.jobPosting,
       resumeText: widget.resumeText,
       history: history,
       message: userMessage,

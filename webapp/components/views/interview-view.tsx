@@ -7,10 +7,10 @@ import { MicButton } from "@/components/mic-button";
 import { Breadcrumb, ErrorState, LoadingState, Page, PageHeader } from "@/components/page-state";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { useUserId } from "@/components/user-id-provider";
 import { cn } from "@/lib/utils";
 import { getResumeRepository } from "@/lib/data/repositories";
-import { fetchTopLevelCategories } from "@/lib/data/supabase-data";
 import { getDeviceId } from "@/lib/device-id";
 import {
   fetchUsage,
@@ -86,13 +86,13 @@ function InterviewBody({ resumeText }: { resumeText: string }) {
   if (data.session === null)
     return (
       <SetupShell>
-        <CategoryJobForm onStarted={reload} />
+        <JobSetupForm onStarted={reload} />
       </SetupShell>
     );
   return (
     <ChatView
       // 새 면접을 시작하면 채팅 상태를 처음부터 다시 만든다.
-      key={`${userId ?? "guest"}:${data.session.categorySlug}:${data.session.jobTitle}`}
+      key={`${userId ?? "guest"}:${data.session.jobTitle}`}
       session={data.session}
       resumeText={resumeText}
       onNewInterview={() => {
@@ -103,23 +103,18 @@ function InterviewBody({ resumeText }: { resumeText: string }) {
   );
 }
 
-function CategoryJobForm({ onStarted }: { onStarted: () => void }) {
-  const [selected, setSelected] = useState<{
-    slug: string;
-    name: string;
-  } | null>(null);
+const MAX_JOB_POSTING_CHARS = 3000;
+
+function JobSetupForm({ onStarted }: { onStarted: () => void }) {
   const [jobTitle, setJobTitle] = useState("");
-  const { data, error, loading, reload } = useAsync("interview-categories", () =>
-    fetchTopLevelCategories(getBrowserClient()),
-  );
+  const [jobPosting, setJobPosting] = useState("");
 
   function start() {
     const title = jobTitle.trim();
-    if (!selected || title === "") return;
+    if (title === "") return;
     writeInterviewSession({
-      categorySlug: selected.slug,
-      categoryName: selected.name,
       jobTitle: title,
+      jobPosting: jobPosting.trim(),
       messages: [],
     });
     onStarted();
@@ -127,37 +122,9 @@ function CategoryJobForm({ onStarted }: { onStarted: () => void }) {
 
   return (
     <div className="flex max-w-2xl flex-col gap-8 rounded-xl border bg-card p-6 lg:p-8">
-      <section aria-labelledby="field-heading">
-        <h2 id="field-heading" className="mb-3 text-sm font-semibold">
-          <span className="mr-2 font-mono text-primary">01</span>지원 분야를 선택하세요
-        </h2>
-        {loading ? (
-          <LoadingState rows={2} />
-        ) : error || !data ? (
-          <ErrorState message="분야 목록을 불러오지 못했습니다." onRetry={reload} />
-        ) : data.length === 0 ? (
-          <p className="text-sm text-muted-foreground">아직 등록된 분야가 없습니다.</p>
-        ) : (
-          <div className="flex flex-wrap gap-2">
-            {data.map((category) => (
-              <Button
-                key={category.id}
-                size="lg"
-                variant={selected?.slug === category.slug ? "default" : "outline"}
-                aria-pressed={selected?.slug === category.slug}
-                onClick={() =>
-                  setSelected(selected?.slug === category.slug ? null : { slug: category.slug, name: category.name })
-                }
-              >
-                {category.name}
-              </Button>
-            ))}
-          </div>
-        )}
-      </section>
       <section aria-labelledby="job-heading">
         <h2 id="job-heading" className="mb-3 text-sm font-semibold">
-          <span className="mr-2 font-mono text-primary">02</span>지원 직무를 입력하세요
+          <span className="mr-2 font-mono text-primary">01</span>지원 직무를 입력하세요
         </h2>
         <Input
           aria-labelledby="job-heading"
@@ -166,6 +133,27 @@ function CategoryJobForm({ onStarted }: { onStarted: () => void }) {
           onChange={(event) => setJobTitle(event.target.value)}
           placeholder="예: 백엔드 개발자"
         />
+      </section>
+      <section aria-labelledby="posting-heading">
+        <h2 id="posting-heading" className="mb-1 text-sm font-semibold">
+          <span className="mr-2 font-mono text-primary">02</span>회사 채용공고
+          <span className="ml-2 text-xs font-normal text-muted-foreground">(선택)</span>
+        </h2>
+        <p className="mb-3 text-xs text-muted-foreground">
+          채용공고를 붙여넣으면 요구 역량과 우대사항에 맞춰 질문해요.
+        </p>
+        <Textarea
+          aria-labelledby="posting-heading"
+          value={jobPosting}
+          onChange={(event) => setJobPosting(event.target.value)}
+          maxLength={MAX_JOB_POSTING_CHARS}
+          rows={8}
+          className="min-h-40 leading-relaxed"
+          placeholder="채용공고 텍스트를 붙여넣으세요."
+        />
+        <p className="mt-1 text-right font-mono text-xs text-muted-foreground">
+          {jobPosting.length} / {MAX_JOB_POSTING_CHARS}
+        </p>
       </section>
       <div className="flex justify-end">
         <Button size="lg" onClick={start}>
@@ -249,8 +237,8 @@ function ChatView({
     try {
       await streamReply({
         auth: await getAuth(),
-        categoryName: session.categoryName,
         jobTitle: session.jobTitle,
+        jobPosting: session.jobPosting,
         resumeText,
         history: current.slice(0, -1),
         message: userMessage,
@@ -306,7 +294,7 @@ function ChatView({
         <h1 className="-mt-1 text-xl font-semibold tracking-tight">
           모의면접{" "}
           <span className="ml-2 text-sm font-normal text-muted-foreground">
-            {session.categoryName} · {session.jobTitle}
+            {session.jobTitle}
           </span>
         </h1>
       </div>
@@ -382,12 +370,12 @@ function ChatView({
           <h2 className="mb-3 font-mono text-xs tracking-wider text-muted-foreground uppercase">Session</h2>
           <dl className="space-y-2 text-sm">
             <div className="flex justify-between gap-3">
-              <dt className="text-muted-foreground">분야</dt>
-              <dd className="min-w-0 truncate font-medium">{session.categoryName}</dd>
-            </div>
-            <div className="flex justify-between gap-3">
               <dt className="text-muted-foreground">직무</dt>
               <dd className="min-w-0 truncate font-medium">{session.jobTitle}</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted-foreground">채용공고</dt>
+              <dd className="font-medium">{session.jobPosting ? "반영됨" : "없음"}</dd>
             </div>
           </dl>
           <Button variant="outline" className="mt-4 w-full" onClick={onNewInterview}>

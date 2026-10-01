@@ -25,8 +25,8 @@ abstract class InterviewChatClient {
   Future<UsageStatus> fetchUsage();
 
   Stream<String> streamReply({
-    required String categoryName,
     required String jobTitle,
+    String jobPosting = '',
     required String resumeText,
     required List<InterviewMessage> history,
     required String message,
