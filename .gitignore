@@ -51,6 +51,9 @@ app.*.map.json
 .vercel
 _flutter/
 
+# 도구가 워크스페이스 루트에 남기는 임시 홈 디렉터리
+/~/
+
 # Local env (Supabase 키). env/dev.json.example만 커밋한다.
 env/dev.json
 

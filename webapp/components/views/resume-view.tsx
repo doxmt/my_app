@@ -1,6 +1,7 @@
 "use client";
 
 import { FileText } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { MeLayout } from "@/components/me-layout";
 import { ErrorState, LoadingState } from "@/components/page-state";
@@ -10,6 +11,8 @@ import { useUserId } from "@/components/user-id-provider";
 import { getResumeRepository } from "@/lib/data/repositories";
 import type { Resume, ResumeSourceType } from "@/lib/models";
 import { extractPdfText, PdfExtractionError } from "@/lib/resume/pdf-client";
+import { resumeReturnPath } from "@/lib/resume/return-path";
+import { extractSelfIntroduction, MAX_SELF_INTRODUCTION_CHARS } from "@/lib/resume/self-intro";
 import { getBrowserClient } from "@/lib/supabase/client";
 import { useAsync } from "@/lib/use-async";
 
@@ -35,8 +38,11 @@ export function ResumeView() {
 
 function ResumeForm({ initial }: { initial: Resume | null }) {
   const { userId } = useUserId();
+  const router = useRouter();
   const fileInput = useRef<HTMLInputElement>(null);
   const [text, setText] = useState(initial?.text ?? "");
+  const [selfIntro, setSelfIntro] = useState(initial?.selfIntroduction ?? "");
+  const [selfIntroNotice, setSelfIntroNotice] = useState<string | null>(null);
   const [sourceType, setSourceType] = useState<ResumeSourceType>(initial?.sourceType ?? "paste");
   const [extracting, setExtracting] = useState(false);
   const [message, setMessage] = useState<{
@@ -49,8 +55,10 @@ function ResumeForm({ initial }: { initial: Resume | null }) {
     setExtracting(true);
     setMessage(null);
     try {
-      setText(await extractPdfText(file));
+      const extracted = await extractPdfText(file);
+      setText(extracted);
       setSourceType("pdf");
+      if (selfIntro.trim() === "") setSelfIntro(extractSelfIntroduction(extracted));
     } catch (error) {
       const text = error instanceof PdfExtractionError ? error.message : "PDF에서 텍스트를 추출하지 못했습니다.";
       setMessage({ text, isError: true });
@@ -60,14 +68,37 @@ function ResumeForm({ initial }: { initial: Resume | null }) {
     }
   }
 
+  /** 입력칸이 이미 채워져 있으면 덮어쓴다. 덮어썼다는 사실은 안내 문구로 보여준다. */
+  function importSelfIntro() {
+    const extracted = extractSelfIntroduction(text);
+    if (extracted === "") {
+      setSelfIntroNotice("이력서에서 자기소개 항목을 찾지 못했어요. 직접 입력해 주세요.");
+      return;
+    }
+    setSelfIntroNotice(
+      selfIntro.trim() === "" ? "이력서에서 자기소개를 가져왔어요." : "이력서의 자기소개로 입력 내용을 바꿨어요.",
+    );
+    setSelfIntro(extracted);
+  }
+
   async function save() {
+    // 자기소개 칸이 비어 있으면 이력서에서 찾아 채운다. 이미 입력한 내용은 덮어쓰지 않는다.
+    let selfIntroduction = selfIntro.trim();
+    if (selfIntroduction === "") {
+      selfIntroduction = extractSelfIntroduction(text);
+      setSelfIntro(selfIntroduction);
+    }
     try {
       await getResumeRepository(userId, getBrowserClient()).save({
         sourceType,
         text,
         updatedAt: new Date().toISOString(),
+        selfIntroduction,
       });
       setMessage({ text: "이력서를 저장했습니다.", isError: false });
+      // 모의면접에서 넘어온 경우(?next=/interview) 저장 후 그 화면으로 돌아간다.
+      const returnPath = resumeReturnPath(window.location.search);
+      if (returnPath) router.push(returnPath);
     } catch {
       setMessage({
         text: "이력서를 저장하지 못했습니다. 다시 시도해주세요.",
@@ -90,6 +121,32 @@ function ResumeForm({ initial }: { initial: Resume | null }) {
           className="min-h-96 bg-card leading-relaxed"
           placeholder="이력서 텍스트를 붙여넣으세요."
         />
+        <label htmlFor="self-intro" className="mt-6 mb-1 block text-sm font-medium">
+          자기소개
+        </label>
+        <p className="mb-2 text-xs text-muted-foreground">면접을 자기소개로 시작할 때 쓰입니다.</p>
+        <Textarea
+          id="self-intro"
+          value={selfIntro}
+          onChange={(event) => setSelfIntro(event.target.value)}
+          maxLength={MAX_SELF_INTRODUCTION_CHARS}
+          rows={6}
+          className="min-h-32 bg-card leading-relaxed"
+          placeholder="자기소개를 입력하세요."
+        />
+        <div className="mt-1 flex items-center justify-between gap-2">
+          <Button variant="outline" size="sm" onClick={importSelfIntro}>
+            이력서에서 가져오기
+          </Button>
+          <p className="font-mono text-xs text-muted-foreground">
+            {selfIntro.length} / {MAX_SELF_INTRODUCTION_CHARS}
+          </p>
+        </div>
+        {selfIntroNotice && (
+          <p role="status" className="mt-2 text-xs text-muted-foreground">
+            {selfIntroNotice}
+          </p>
+        )}
       </div>
       <aside aria-label="이력서 작업" className="flex flex-col gap-3 rounded-xl border bg-card p-5 xl:sticky xl:top-24">
         <input

@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronDown, LogIn, LogOut, Menu, User, X } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -42,12 +43,7 @@ const NAV: NavItem[] = [
 function Logo() {
   return (
     <Link href="/" className="flex items-center gap-2.5 rounded-md" aria-label="DevInterview 홈">
-      <span
-        aria-hidden
-        className="grid size-8 place-items-center rounded-md bg-primary font-mono text-sm font-bold text-primary-foreground"
-      >
-        {">_"}
-      </span>
+      <Image src="/icon.png" width={32} height={32} alt="" aria-hidden className="size-8 rounded-md" priority />
       <span className="text-[17px] font-semibold tracking-tight">DevInterview</span>
     </Link>
   );

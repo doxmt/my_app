@@ -86,11 +86,22 @@ function resumeFromJson(json: unknown): Resume {
   if (!isObject(json)) throw new Error("object expected");
   const sourceType = str(json.source_type);
   if (sourceType !== "paste" && sourceType !== "pdf") throw new Error("invalid source_type");
-  return { sourceType, text: str(json.text), updatedAt: str(json.updated_at) };
+  return {
+    sourceType,
+    text: str(json.text),
+    updatedAt: str(json.updated_at),
+    // 예전에 저장된 데이터에는 없다.
+    selfIntroduction: typeof json.self_introduction === "string" ? json.self_introduction : "",
+  };
 }
 
 function resumeToJson(resume: Resume): Json {
-  return { source_type: resume.sourceType, text: resume.text, updated_at: resume.updatedAt };
+  return {
+    source_type: resume.sourceType,
+    text: resume.text,
+    updated_at: resume.updatedAt,
+    ...(resume.selfIntroduction ? { self_introduction: resume.selfIntroduction } : {}),
+  };
 }
 
 function messageFromJson(json: unknown): InterviewMessage {
@@ -104,18 +115,17 @@ function sessionFromJson(json: unknown): InterviewSession {
   if (!isObject(json)) throw new Error("object expected");
   const messages = Array.isArray(json.messages) ? json.messages : [];
   return {
-    categorySlug: str(json.category_slug),
-    categoryName: str(json.category_name),
+    // 예전 버전에는 category_slug/category_name이 함께 저장돼 있었다. 지금은 쓰지 않아 읽지 않는다.
     jobTitle: str(json.job_title),
+    jobPosting: typeof json.job_posting === "string" ? json.job_posting : "",
     messages: messages.map(messageFromJson),
   };
 }
 
 function sessionToJson(session: InterviewSession): Json {
   return {
-    category_slug: session.categorySlug,
-    category_name: session.categoryName,
     job_title: session.jobTitle,
+    ...(session.jobPosting ? { job_posting: session.jobPosting } : {}),
     messages: session.messages.map((message) => ({
       role: message.role,
       content: message.content,

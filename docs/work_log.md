@@ -174,3 +174,23 @@
 - `lib/core/theme/theme_mode_provider.dart`, `lib/core/speech/`, `lib/main.dart`, `lib/features/me/presentation/me_page.dart`, `lib/features/interview/presentation/interview_page.dart`, `lib/features/practice/presentation/question_detail_page.dart`, `lib/features/resume/presentation/resume_page.dart`
 - `android/app/src/main/AndroidManifest.xml`, `ios/Runner/Info.plist`, `pubspec.yaml`, `pubspec.lock`
 - `docs/adr.md`(ADR-020 정리, ADR-021), `docs/architecture.md`, `docs/work_log.md`, `docs/current_state.md`
+
+## 2026-10-01
+- PR #34(브랜치 `feat/33-resume-return-to-interview`, 이슈 #33)로 한꺼번에 올림. 최초 푸시 시 CI(test·webapp·admin·Vercel) 통과 확인, 이후 푸시마다 재실행
+- **면접 흐름**: 면접에서 "이력서 입력하기"로 가서 저장하면 면접으로 복귀(앱 `?from=interview`, 웹 `?next=/interview`). 음성 입력 중 표시 강화(빨간 버튼·파동·"듣는 중…"·입력창 강조, 앱 진동은 제외)
+- **면접 시작 개편(ADR-023)**: 분야 선택 제거 → 지원 직무 + 선택 채용공고(3000자). `interview-chat` Edge Function 수정·재배포(`categoryName` 선택값, `jobPosting` 반영, Deno 테스트 19개). 실제 호출 1회로 채용공고가 질문에 반영되는 것 확인
+- **자기소개 기능(ADR-023)**: 이력서에 자기소개 저장·추출·"자기소개로 시작하기"(앱·웹). `resumes.self_introduction` 컬럼 마이그레이션을 원격에 적용(`supabase db push`). 원격에만 있던 `20260920110000_seed_backend_ai_content`는 자리표시 빈 파일로 기록을 맞춤. 추출이 `업무 경험` 이후까지 가져오는 버그 수정(띄어쓰기 무시, 섹션명 126개, 날짜 줄 경계, 흔한 한 단어는 빈 줄/장식 있을 때만)
+- **로그인(ADR-022)**: 카카오·구글·깃허브 3개로 축소, 애플 코드·의존성·iOS 권한 제거. Supabase에서 GitHub·Google·Kakao provider를 켬(Management API, 시크릿은 가려진 입력 창). 깃허브는 웹에서 동작 확인(어드민 계정에 합쳐짐), 카카오는 웹에서 동작 확인(별도 일반 계정). **구글은 계정 선택 화면까지만 확인했고 로그인 완료는 서버 기록상 없음**(앞서 "확인됐다"고 한 것은 실수). 깃허브 Client ID 첫 글자(`O`) 누락을 디바이스 코드 응답으로 찾아 수정. 카카오 `KOE004/205/006`을 차례로 해결(활성화, 세 동의항목, 플랫폼 키의 리다이렉트 URI). Supabase 리다이렉트 허용 목록에 localhost 3000·3001, Preview 패턴, 운영 도메인, 모바일 딥링크 추가
+- **브랜딩**: 로고 에셋(`assets/brand/`: 120·128 정사각형·512·1024), 구글 동의 화면 이름·로고, 카카오 앱 아이콘용 128px. 웹 SEO·OpenGraph 메타데이터, 파비콘·앱 아이콘, 헤더 로고를 이미지로 교체(다른 세션 변경 포함)
+- **히어로 애니메이션(웹)**: practice.md 카드에서 질문 타이핑 → 01·02·03 단계가 차례로 켜지고 유지 → 마지막에 일괄 초기화. 모션 감소 설정이면 정적 화면
+- **콘텐츠**: 백엔드 주제 2→9개(81문제), 모바일 주제 5→14개(137문제), 전체 게시 문제 360→548개. 작성(서브에이전트 4, 공식 문서 대조) → 독립 검증(별도 에이전트 4, 사실 오류 다수 수정·12문항 drop) → `publish_content.py`로 형식·중복 검사 → DB 직접 게시. 검증 에이전트 4개가 사용량 한도로 한 번 중단돼 재시작. AI/ML·모델 분야 재분류와 ML 아이콘 매핑은 다른 세션에서 처리(`20261001000000_reclassify_llm_rag_under_ml.sql`, 원격 적용됨)
+- **분석(문서화만)**: 모의면접 호출 비용(`gpt-4.1-mini` $0.40/$1.60, 메시지 1회 평균 약 4.6원, 면접 1회 약 70원). 구독 손익분기: 서비스 구독료(Supabase Pro+Vercel Pro 월 약 63,000원)만 기준으로 9,900원·월 300회면 구독자 8명, 수수료·부가세 반영 시 11~12명. 출시 준비 항목 정리(계정 삭제, 개인정보처리방침·국외 이전 고지, 애플 로그인 정책 4.8, 운영/개발 환경 분리, 구글 앱 인증, 도메인)
+- **Vercel 상태 확인**: 운영(Production)은 9/17 Flutter 웹 그대로(`main` 마지막 커밋 9/17). 운영에 PDF 함수가 없어 `/api/parse-pdf`가 404이고 앱의 `PDF_PARSE_BASE_URL`이 운영 도메인을 가리킴. 어드민 Vercel 프로젝트는 찾지 못함
+- **실수 기록**: 구글 로그인 완료를 서버 기록 확인 없이 단정함, 서브에이전트 보고를 그대로 믿지 않고 재검증해야 한다는 교훈 재확인(깃허브 ID 누락, 추출기 경계), `dart format`이 기존 줄을 80자로 재정렬, 파이썬 `urllib` 인증서 오류(`curl` 사용), 대기 명령에서 `/tmp` 사용
+
+### 주요 변경 파일
+- 면접·자기소개: `lib/features/interview/**`, `lib/features/resume/**`(`self_intro_extractor.dart`), `webapp/components/views/interview-view.tsx`·`resume-view.tsx`, `webapp/lib/resume/self-intro.ts`, `supabase/functions/interview-chat/**`
+- 로그인: `lib/features/auth/**`, `webapp/components/views/login-view.tsx`, `pubspec.yaml`, `ios/Runner/Runner.entitlements`
+- 마이그레이션: `supabase/migrations/20260930090000_resumes_self_introduction.sql`, `20260920110000_seed_backend_ai_content.sql`(자리표시), `20261001000000_reclassify_llm_rag_under_ml.sql`
+- 웹: `webapp/components/practice-demo.tsx`, `webapp/app/layout.tsx`·`icon.png`·`apple-icon.png`·`favicon.ico`, `assets/brand/`
+- 문서: `docs/adr.md`(ADR-022·023), `docs/architecture.md`, `docs/prd.md`, `docs/overview.md`, `docs/roadmap.md`

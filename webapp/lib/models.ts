@@ -33,6 +33,8 @@ export type Resume = {
   sourceType: ResumeSourceType;
   text: string;
   updatedAt: string;
+  /** 면접을 자기소개로 시작할 때 쓰는 자기소개(최대 1500자, 없으면 빈 문자열). */
+  selfIntroduction: string;
 };
 
 export type MessageRole = "user" | "assistant";
@@ -44,9 +46,9 @@ export type InterviewMessage = {
 };
 
 export type InterviewSession = {
-  categorySlug: string;
-  categoryName: string;
   jobTitle: string;
+  /** 선택. 사용자가 붙여넣은 회사 채용공고 텍스트(없으면 빈 문자열). */
+  jobPosting: string;
   messages: InterviewMessage[];
 };
 

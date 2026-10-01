@@ -21,8 +21,32 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "DevInterview - 기술면접 준비",
-  description: "개발자 기술면접 준비 앱",
+  applicationName: "DevInterview",
+  title: {
+    default: "DevInterview | 개발자 기술면접 준비",
+    template: "%s | DevInterview",
+  },
+  description: "서술형 문제풀이와 이력서 기반 AI 모의면접으로 개발자 기술면접을 준비하세요.",
+  keywords: ["개발자 면접", "기술면접", "코딩 인터뷰", "AI 모의면접", "DevInterview"],
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon.png", type: "image/png", sizes: "128x128" },
+    ],
+    apple: [{ url: "/apple-icon.png", type: "image/png", sizes: "180x180" }],
+  },
+  openGraph: {
+    title: "DevInterview | 개발자 기술면접 준비",
+    description: "서술형 문제풀이와 이력서 기반 AI 모의면접으로 개발자 기술면접을 준비하세요.",
+    siteName: "DevInterview",
+    locale: "ko_KR",
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: "DevInterview | 개발자 기술면접 준비",
+    description: "서술형 문제풀이와 이력서 기반 AI 모의면접으로 개발자 기술면접을 준비하세요.",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

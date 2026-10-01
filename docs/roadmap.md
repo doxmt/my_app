@@ -50,6 +50,7 @@
 - 완료 기준: 비회원 때 쌓은 오답노트·이력서가 가입 후 계정에 남아 있고, 다른 계정 데이터는 보이지 않음
 
 ## M4 이후 후속: Apple/Kakao OAuth 추가 + 홈 카드 아이콘 구현 + 딥링크 등록
+> 2026-10-01: Apple 로그인은 제거했다(카카오·구글·깃허브 3개, ADR-022). 아래 Apple 항목은 이력으로 남긴다. 앱스토어 출시 시 Apple 로그인(가이드라인 4.8)이 다시 필요할 수 있다.
 - **Apple 로그인** (M4의 Google/GitHub에 추가)
   - iOS: 네이티브 `sign_in_with_apple` SDK로 ID 토큰 + nonce → `signInWithIdToken()`
   - Web/Android: Supabase `signInWithOAuth(OAuthProvider.apple)` 리다이렉트

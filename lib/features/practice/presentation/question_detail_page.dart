@@ -32,6 +32,7 @@ class QuestionDetailPage extends ConsumerStatefulWidget {
 
 class _QuestionDetailPageState extends ConsumerState<QuestionDetailPage> {
   final _answerController = TextEditingController();
+  final _listening = ValueNotifier<bool>(false);
   bool _revealed = false;
   bool? _isCorrect;
   bool _saved = false;
@@ -39,6 +40,7 @@ class _QuestionDetailPageState extends ConsumerState<QuestionDetailPage> {
   @override
   void dispose() {
     _answerController.dispose();
+    _listening.dispose();
     super.dispose();
   }
 
@@ -121,6 +123,7 @@ class _QuestionDetailPageState extends ConsumerState<QuestionDetailPage> {
                       _PracticeBody(
                         question: question,
                         answerController: _answerController,
+                        listening: _listening,
                         revealed: _revealed,
                         isCorrect: _isCorrect,
                         saved: _saved,
@@ -175,6 +178,7 @@ class _PracticeBody extends StatelessWidget {
   const _PracticeBody({
     required this.question,
     required this.answerController,
+    required this.listening,
     required this.revealed,
     required this.isCorrect,
     required this.saved,
@@ -185,6 +189,7 @@ class _PracticeBody extends StatelessWidget {
 
   final Question question;
   final TextEditingController answerController;
+  final ValueNotifier<bool> listening;
   final bool revealed;
   final bool? isCorrect;
   final bool saved;
@@ -199,15 +204,23 @@ class _PracticeBody extends StatelessWidget {
       children: [
         Align(
           alignment: Alignment.centerRight,
-          child: DictationButton(controller: answerController, enabled: !revealed),
+          child: DictationButton(controller: answerController, listening: listening, enabled: !revealed),
         ),
-        TextField(
-          controller: answerController,
-          enabled: !revealed,
-          maxLines: 6,
-          decoration: const InputDecoration(
-            border: OutlineInputBorder(),
-            hintText: '답변을 입력하세요',
+        ValueListenableBuilder<bool>(
+          valueListenable: listening,
+          builder: (context, isListening, _) => TextField(
+            controller: answerController,
+            enabled: !revealed,
+            maxLines: 6,
+            decoration: InputDecoration(
+              border: const OutlineInputBorder(),
+              hintText: isListening ? '듣고 있어요. 말씀하세요…' : '답변을 입력하세요',
+              enabledBorder: isListening
+                  ? OutlineInputBorder(
+                      borderSide: BorderSide(color: Theme.of(context).colorScheme.error, width: 2),
+                    )
+                  : null,
+            ),
           ),
         ),
         const SizedBox(height: 16),

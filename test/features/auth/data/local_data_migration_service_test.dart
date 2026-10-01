@@ -155,6 +155,7 @@ void main() {
           sourceType: ResumeSourceType.paste,
           text: '3년차 백엔드 개발자',
           updatedAt: DateTime.utc(2026, 9, 18),
+          selfIntroduction: '안녕하세요',
         );
       final gateway = FakeMigrationGateway(serverHasResume: false);
 
@@ -169,6 +170,7 @@ void main() {
       await service.migrateIfNeeded('user-1');
 
       expect(gateway.insertedResume?.text, '3년차 백엔드 개발자');
+      expect(gateway.insertedResume?.selfIntroduction, '안녕하세요');
       expect(jsonStore.data['resume'], {'version': 1, 'items': []});
     });
 

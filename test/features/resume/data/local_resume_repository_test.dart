@@ -59,4 +59,20 @@ void main() {
 
     expect(resume?.text, '텍스트');
   });
+
+  test('자기소개는 저장소를 거쳐도 유지되고, 비어 있으면 저장 JSON에 키가 없다', () async {
+    final store = FakeLocalJsonStore();
+    final repository = LocalResumeRepository(store);
+
+    await repository.save(
+      Resume(sourceType: ResumeSourceType.paste, text: '텍스트', updatedAt: DateTime.utc(2026, 9, 18), selfIntroduction: '소개'),
+    );
+    expect((await repository.fetch())?.selfIntroduction, '소개');
+
+    await repository.save(_resume());
+    final items = store.read('resume');
+    final json = (await items)!['items'] as List<dynamic>;
+    expect((json.first as Map).containsKey('self_introduction'), isFalse);
+    expect((await repository.fetch())?.selfIntroduction, '');
+  });
 }

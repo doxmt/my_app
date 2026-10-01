@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/speech/dictation_button.dart';
-import '../../categories/presentation/categories_providers.dart';
+import '../../resume/domain/self_intro_extractor.dart';
 import '../../resume/presentation/resume_providers.dart';
 import '../domain/interview_chat_client.dart';
 import '../domain/interview_message.dart';
@@ -44,14 +44,14 @@ class InterviewPage extends ConsumerWidget {
                   const Text('모의면접을 시작하려면 이력서를 먼저 입력해주세요.'),
                   const SizedBox(height: 8),
                   ElevatedButton(
-                    onPressed: () => context.push('/me/resume'),
+                    onPressed: () => context.push('/me/resume?from=interview'),
                     child: const Text('이력서 입력하기'),
                   ),
                 ],
               ),
             );
           }
-          return _InterviewBody(resumeText: resume.text);
+          return _InterviewBody(resumeText: resume.text, selfIntroduction: resume.selfIntroduction);
         },
       ),
     );
@@ -59,9 +59,10 @@ class InterviewPage extends ConsumerWidget {
 }
 
 class _InterviewBody extends ConsumerWidget {
-  const _InterviewBody({required this.resumeText});
+  const _InterviewBody({required this.resumeText, required this.selfIntroduction});
 
   final String resumeText;
+  final String selfIntroduction;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -84,7 +85,7 @@ class _InterviewBody extends ConsumerWidget {
       ),
       data: (session) {
         if (session == null) {
-          return _CategoryJobForm(resumeText: resumeText);
+          return _JobSetupForm(selfIntroduction: selfIntroduction);
         }
         return _ChatView(session: session, resumeText: resumeText);
       },
@@ -92,80 +93,71 @@ class _InterviewBody extends ConsumerWidget {
   }
 }
 
-class _CategoryJobForm extends ConsumerStatefulWidget {
-  const _CategoryJobForm({required this.resumeText});
+class _JobSetupForm extends ConsumerStatefulWidget {
+  const _JobSetupForm({required this.selfIntroduction});
 
-  final String resumeText;
+  /// 이력서에 저장된 자기소개. "자기소개로 시작하기"의 입력칸 초기값.
+  final String selfIntroduction;
 
   @override
-  ConsumerState<_CategoryJobForm> createState() => _CategoryJobFormState();
+  ConsumerState<_JobSetupForm> createState() => _JobSetupFormState();
 }
 
-class _CategoryJobFormState extends ConsumerState<_CategoryJobForm> {
+class _JobSetupFormState extends ConsumerState<_JobSetupForm> {
   final _jobTitleController = TextEditingController();
-  String? _selectedCategorySlug;
-  String? _selectedCategoryName;
+  final _jobPostingController = TextEditingController();
+  late final TextEditingController _selfIntroController;
+  bool _startWithSelfIntro = false;
+  bool _showSelfIntroError = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _selfIntroController = TextEditingController(text: widget.selfIntroduction);
+  }
 
   @override
   void dispose() {
+    _selfIntroController.dispose();
     _jobTitleController.dispose();
+    _jobPostingController.dispose();
     super.dispose();
   }
 
   Future<void> _start() async {
-    final categorySlug = _selectedCategorySlug;
-    final categoryName = _selectedCategoryName;
     final jobTitle = _jobTitleController.text.trim();
-    if (categorySlug == null || categoryName == null || jobTitle.isEmpty) {
+    if (jobTitle.isEmpty) {
       return;
     }
 
+    final selfIntro = _selfIntroController.text.trim();
+    if (_startWithSelfIntro && selfIntro.isEmpty) {
+      setState(() => _showSelfIntroError = true);
+      return;
+    }
+
+    // 자기소개로 시작하면 자기소개가 첫 사용자 메시지가 된다. 면접관 응답은 채팅 화면이 한 번만 요청한다.
     final session = InterviewSession(
-      categorySlug: categorySlug,
-      categoryName: categoryName,
       jobTitle: jobTitle,
-      messages: const [],
+      jobPosting: _jobPostingController.text.trim(),
+      messages: _startWithSelfIntro
+          ? [InterviewMessage(role: MessageRole.user, content: selfIntro, createdAt: DateTime.now())]
+          : const [],
     );
     await ref.read(interviewRepositoryProvider).save(session);
+    if (_startWithSelfIntro) {
+      ref.read(pendingFirstMessageProvider.notifier).set(selfIntro);
+    }
     ref.invalidate(interviewSessionProvider);
   }
 
   @override
   Widget build(BuildContext context) {
-    final categoriesAsync = ref.watch(categoriesProvider);
-
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text('지원 분야를 선택하세요'),
-          const SizedBox(height: 8),
-          categoriesAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (error, stackTrace) => const Text('분야 목록을 불러오지 못했습니다.'),
-            data: (categories) {
-              if (categories.isEmpty) {
-                return const Text('아직 등록된 분야가 없습니다.');
-              }
-              return Wrap(
-                spacing: 8,
-                children: categories.map((category) {
-                  return ChoiceChip(
-                    label: Text(category.name),
-                    selected: _selectedCategorySlug == category.slug,
-                    onSelected: (selected) {
-                      setState(() {
-                        _selectedCategorySlug = selected ? category.slug : null;
-                        _selectedCategoryName = selected ? category.name : null;
-                      });
-                    },
-                  );
-                }).toList(),
-              );
-            },
-          ),
-          const SizedBox(height: 16),
           const Text('지원 직무를 입력하세요'),
           const SizedBox(height: 8),
           TextField(
@@ -175,6 +167,54 @@ class _CategoryJobFormState extends ConsumerState<_CategoryJobForm> {
               hintText: '예: 백엔드 개발자',
             ),
           ),
+          const SizedBox(height: 24),
+          const Text('회사 채용공고 (선택)'),
+          const SizedBox(height: 4),
+          Text(
+            '채용공고를 붙여넣으면 요구 역량과 우대사항에 맞춰 질문해요.',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _jobPostingController,
+            minLines: 5,
+            maxLines: 10,
+            maxLength: 3000,
+            decoration: const InputDecoration(
+              border: OutlineInputBorder(),
+              hintText: '채용공고 텍스트를 붙여넣으세요.',
+            ),
+          ),
+          const SizedBox(height: 8),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('자기소개로 시작하기'),
+            subtitle: const Text('자기소개를 첫 답변으로 보내고, 면접관이 그 내용에서 꼬리 질문을 해요.'),
+            value: _startWithSelfIntro,
+            onChanged: (value) => setState(() {
+              _startWithSelfIntro = value;
+              _showSelfIntroError = false;
+            }),
+          ),
+          if (_startWithSelfIntro) ...[
+            const SizedBox(height: 8),
+            TextField(
+              controller: _selfIntroController,
+              minLines: 4,
+              maxLines: 8,
+              maxLength: maxSelfIntroductionLength,
+              onChanged: (_) {
+                if (_showSelfIntroError) {
+                  setState(() => _showSelfIntroError = false);
+                }
+              },
+              decoration: InputDecoration(
+                border: const OutlineInputBorder(),
+                hintText: '자기소개를 입력하세요.',
+                errorText: _showSelfIntroError ? '자기소개를 입력해 주세요.' : null,
+              ),
+            ),
+          ],
           const SizedBox(height: 16),
           ElevatedButton(onPressed: _start, child: const Text('면접 시작')),
         ],
@@ -196,6 +236,7 @@ class _ChatView extends ConsumerStatefulWidget {
 class _ChatViewState extends ConsumerState<_ChatView> {
   late List<InterviewMessage> _messages;
   final _inputController = TextEditingController();
+  final _listening = ValueNotifier<bool>(false);
 
   bool _isSending = false;
   String _draftReply = '';
@@ -210,11 +251,20 @@ class _ChatViewState extends ConsumerState<_ChatView> {
     super.initState();
     _messages = List.of(widget.session.messages);
     _loadInitialUsage();
+    // 시작 화면에서 자기소개로 시작한 경우에만 첫 응답을 한 번 요청한다. 재진입 땐 비어 있어 호출하지 않는다.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final first = ref.read(pendingFirstMessageProvider.notifier).take();
+      if (first != null) {
+        _requestReply(first);
+      }
+    });
   }
 
   @override
   void dispose() {
     _inputController.dispose();
+    _listening.dispose();
     super.dispose();
   }
 
@@ -276,8 +326,8 @@ class _ChatViewState extends ConsumerState<_ChatView> {
     final history = _messages.sublist(0, _messages.length - 1);
     final client = ref.read(interviewChatClientProvider);
     final stream = client.streamReply(
-      categoryName: widget.session.categoryName,
       jobTitle: widget.session.jobTitle,
+      jobPosting: widget.session.jobPosting,
       resumeText: widget.resumeText,
       history: history,
       message: userMessage,
@@ -411,17 +461,25 @@ class _ChatViewState extends ConsumerState<_ChatView> {
             child: Row(
               children: [
                 Expanded(
-                  child: TextField(
-                    controller: _inputController,
-                    enabled: !_isSending && !isBlocked,
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      hintText: '메시지를 입력하세요',
+                  child: ValueListenableBuilder<bool>(
+                    valueListenable: _listening,
+                    builder: (context, listening, _) => TextField(
+                      controller: _inputController,
+                      enabled: !_isSending && !isBlocked,
+                      decoration: InputDecoration(
+                        border: const OutlineInputBorder(),
+                        hintText: listening ? '듣고 있어요. 말씀하세요…' : '메시지를 입력하세요',
+                        enabledBorder: listening
+                            ? OutlineInputBorder(
+                                borderSide: BorderSide(color: Theme.of(context).colorScheme.error, width: 2),
+                              )
+                            : null,
+                      ),
+                      onSubmitted: (_) => _submit(),
                     ),
-                    onSubmitted: (_) => _submit(),
                   ),
                 ),
-                DictationButton(controller: _inputController, enabled: !_isSending && !isBlocked),
+                DictationButton(controller: _inputController, listening: _listening, enabled: !_isSending && !isBlocked),
                 IconButton(
                   icon: const Icon(Icons.send),
                   onPressed: _isSending || isBlocked ? null : _submit,

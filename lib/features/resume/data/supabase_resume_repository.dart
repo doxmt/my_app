@@ -13,7 +13,7 @@ class SupabaseResumeRepository implements ResumeRepository {
   Future<Resume?> fetch() async {
     final rows = await _client
         .from('resumes')
-        .select('source_type, extracted_text, created_at')
+        .select('source_type, extracted_text, self_introduction, created_at')
         .eq('user_id', _userId)
         .order('created_at', ascending: false)
         .limit(1);
@@ -26,6 +26,7 @@ class SupabaseResumeRepository implements ResumeRepository {
       sourceType: _sourceTypeFromDb(row['source_type'] as String),
       text: row['extracted_text'] as String? ?? '',
       updatedAt: DateTime.parse(row['created_at'] as String),
+      selfIntroduction: row['self_introduction'] as String? ?? '',
     );
   }
 
@@ -42,6 +43,7 @@ class SupabaseResumeRepository implements ResumeRepository {
       'user_id': _userId,
       'source_type': _sourceTypeToDb(resume.sourceType),
       'extracted_text': resume.text,
+      'self_introduction': resume.selfIntroduction.isEmpty ? null : resume.selfIntroduction,
     };
 
     if (existing.isEmpty) {

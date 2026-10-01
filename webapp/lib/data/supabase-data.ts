@@ -133,7 +133,7 @@ export const remoteResume = {
   async fetch(client: SupabaseClient, userId: string): Promise<Resume | null> {
     const { data, error } = await client
       .from("resumes")
-      .select("source_type, extracted_text, created_at")
+      .select("source_type, extracted_text, self_introduction, created_at")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(1);
@@ -144,6 +144,7 @@ export const remoteResume = {
       sourceType: row.source_type === "text" ? "paste" : "pdf",
       text: (row.extracted_text as string | null) ?? "",
       updatedAt: row.created_at as string,
+      selfIntroduction: (row.self_introduction as string | null) ?? "",
     };
   },
 
@@ -160,6 +161,7 @@ export const remoteResume = {
       user_id: userId,
       source_type: sourceTypeToDb(resume.sourceType),
       extracted_text: resume.text,
+      self_introduction: resume.selfIntroduction || null,
     };
     const id = (existing as Row[])[0]?.id as string | undefined;
     const { error } = id
@@ -202,6 +204,7 @@ export function createMigrationGateway(client: SupabaseClient): MigrationGateway
         user_id: userId,
         source_type: sourceTypeToDb(resume.sourceType),
         extracted_text: resume.text,
+        self_introduction: resume.selfIntroduction || null,
       });
       if (error) throw error;
     },

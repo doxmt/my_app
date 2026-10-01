@@ -114,7 +114,9 @@ final routerProvider = Provider<GoRouter>((ref) {
                   ),
                   GoRoute(
                     path: 'resume',
-                    builder: (context, state) => const ResumePage(),
+                    builder: (context, state) => ResumePage(
+                      returnToInterview: state.uri.queryParameters['from'] == 'interview',
+                    ),
                   ),
                   GoRoute(
                     path: 'wrong-notes',

@@ -9,7 +9,7 @@
 핵심 기능:
 1. 분야별(카테고리) 서술형 문제 학습 — 홈 화면에서 아이콘 카드로 분야 선택 → 답변 작성 → 모범답안 확인 → 정답/오답 자가 채점 → 오답노트 저장
 2. 이력서(PDF/텍스트) 기반 AI 모의면접 — LLM과 대화형으로 실제 면접처럼 진행
-3. OAuth 회원가입(Google/GitHub/Apple/Kakao) — 비회원은 로그인 없이 바로 쓰되 모의면접 사용량을 하루 소량만, 회원은 더 넉넉하게(현재 무료, 추후 결제로 무제한 고려 — 이번 범위 밖). 각 플랫폼별 최적 로그인 방식 제공
+3. OAuth 회원가입(Google/GitHub/Kakao) — 비회원은 로그인 없이 바로 쓰되 모의면접 사용량을 하루 소량만, 회원은 더 넉넉하게(현재 무료, 추후 결제로 무제한 고려 — 이번 범위 밖). 각 플랫폼별 최적 로그인 방식 제공
 4. 어드민 콘텐츠 파이프라인 — 자료 수집 → AI 문제 초안 → 중복 비교 → 관리자 승인 → 게시
 
 **개발 순서 (사용자 결정)**: 핵심 학습/면접 기능 → OAuth 회원가입 → 어드민+콘텐츠 자동화 → 폴리시.
@@ -28,7 +28,7 @@
 | 웹 클라이언트 | **Next.js 16 (`webapp/`)** — Android/iOS는 Flutter 유지 | React/Next 생태계 선호로 웹을 따로 만든다. 전 기능 동등, 동등 기능 완성 후 컷오버. 면접은 브라우저가 Edge Function 직접 호출, PDF는 Route Handler. Vercel은 기존 프로젝트의 Root Directory를 `webapp/`으로 변경 (ADR-019) |
 | LLM | **Anthropic + OpenAI, 어댑터로 교체 가능** | Edge Function 안에 `LlmProvider` 인터페이스 + 두 어댑터, `LLM_PROVIDER` env var로 선택 |
 | 비회원 처리 | **로그인 없음(익명 로그인도 안 씀). 데이터는 기기에만, 한도는 기기 ID + IP** | 사용자 요청: 비회원은 바로 사용. 서버에 비회원 데이터를 두지 않아 신뢰할 수 없는 기기 ID로 조회하는 경로가 없음. 기기 ID만으로는 앱 초기화로 한도가 풀려서 IP 한도를 함께 건다 |
-| OAuth | Google, Apple, GitHub, Kakao | M4는 Google/GitHub 구현, M4 이후 후속에서 Apple/Kakao 추가 (ADR-018) |
+| OAuth | Google, GitHub, Kakao | M4는 Google/GitHub 구현, 후속에서 Kakao 추가(ADR-018). Apple은 2026-10-01 제거 (ADR-022) |
 | 이력서 추출 | 텍스트 붙여넣기 기본. PDF는 앱/웹이 Vercel Node 함수(`unpdf`, 컷오버 후 `webapp`의 Route Handler)로 직접 보내 텍스트만 받음, 원본 저장 안 함 | Deno엔 PDF 파서가 없고, 비회원은 Storage에 올릴 수 없음 |
 | 결제 | 미구현. `profiles.plan_tier`, `stripe_customer_id`(nullable)만 추가 | 나중에 마이그레이션 없이 붙이기 위해 |
 | 어드민 | **React 웹앱**, 별도 배포, 같은 Supabase 프로젝트 | 내부 도구라 Flutter일 필요 없음 |
@@ -176,7 +176,7 @@ webapp/           Next.js 웹 클라이언트 (M6, ADR-019)
 - PDF 파싱 라이브러리(`pdf-parse` vs `unpdf`), 파싱 함수 호출 제한 방식 — M3 시작 시
 - 자료 수집 소스(수동 입력 vs 자동 수집) — **M5-a에서 수동 입력으로 확정** (M5-b는 LLM 자동화)
 - 어드민 프레임워크(Next.js vs Vite+React) — **M5-a에서 Vite+React+TypeScript (Tailwind v4 + shadcn/ui)로 확정**
-- Apple/Kakao OAuth 지원 — **M4 이후 후속에서 Apple/Kakao 추가** (ADR-018)
+- Apple/Kakao OAuth 지원 — M4 이후 후속에서 추가했으나 **Apple은 2026-10-01 제거, 카카오·구글·깃허브 3개로 확정** (ADR-018, ADR-022)
 - 홈 분야 카드 아이콘 구현 방식(DB vs 앱 코드 매핑) — **M4 이후 후속에서 앱 코드 매핑(`slug → IconData`)으로 확정**. 트레이드오프: 분야 추가 시 앱 배포 필요
 - 딥링크 스킴 값(reverse-domain 형식) — **이번 작업(Apple/Kakao 로그인) 계획 단계에서 확정 예정** (iOS `CFBundleURLTypes`, Android intent-filter)
 - Kakao 로그인 시 이메일 필수/미필수 — **M4 이후 후속에서 현재는 이메일 미필수 가입 허용**, 최종 확정은 출시 후 사용자 데이터로 재검토

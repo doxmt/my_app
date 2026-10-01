@@ -70,8 +70,8 @@ class HttpInterviewChatClient implements InterviewChatClient {
 
   @override
   Stream<String> streamReply({
-    required String categoryName,
     required String jobTitle,
+    String jobPosting = '',
     required String resumeText,
     required List<InterviewMessage> history,
     required String message,
@@ -81,8 +81,8 @@ class HttpInterviewChatClient implements InterviewChatClient {
       ..headers.addAll(await _authHeaders())
       ..headers['Content-Type'] = 'application/json'
       ..body = jsonEncode({
-        'categoryName': categoryName,
         'jobTitle': jobTitle,
+        if (jobPosting.trim().isNotEmpty) 'jobPosting': jobPosting.trim(),
         'resumeText': resumeText,
         'history': history
             .map((item) => {'role': item.role.name, 'content': item.content})
