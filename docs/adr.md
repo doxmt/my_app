@@ -230,3 +230,13 @@
 이유: 분야 선택은 면접 질문에 쓸모가 적었고, 직무와 채용공고가 질문 품질에 더 직접적이다. 실제 면접이 자기소개로 시작하므로 그 흐름을 연습할 수 있고, 기존 채팅 구조를 그대로 써서 서버 기능 추가가 필요 없다.
 대안: 분야 유지, 면접관이 먼저 자기소개를 요청, 자기소개를 LLM으로 만들어 주는 2단계(하루 1회 제한 아이디어, 미구현).
 트레이드오프: 채용공고가 매 요청 입력에 더해져 호출당 약 2~3천 토큰(`gpt-4.1-mini` 기준 약 $0.001)이 늘어난다. 제목이 없는 이력서는 자기소개를 직접 입력해야 하고, 규칙이 모든 이력서 형식을 처리하지는 못한다. 회원 이력서 저장에는 DB 컬럼 마이그레이션(`20260930090000_resumes_self_introduction.sql`)이 필요하며 원격에 적용했다.
+
+---
+
+## ADR-024: 회원의 profiles 쓰기는 표시 컬럼만 허용하고, 계정별 한도는 별도 테이블에 둔다
+
+**날짜:** 2026-10-01
+결정: `authenticated`의 `public.profiles` 권한을 `select` + `update (display_name, avatar_url)`로 줄이고 insert/delete 등은 회수한다(`20261001020000_restrict_profiles_privileges.sql`). `is_admin`·`plan_tier`·`stripe_customer_id`는 service_role/대시보드에서만 바꾼다. 특정 회원의 일일 면접 한도 예외는 `profiles.plan_tier`가 아니라 service_role만 읽는 `usage_overrides` 테이블에 둔다(`20261001010000_usage_overrides.sql`, `interview-chat`이 먼저 조회하고 없으면 `free` 값). 조회 실패 시 기본값으로 대체하지 않고 에러를 던진다.
+이유: 초기 스키마가 `profiles`에 테이블 단위 `update/insert/delete`를 주고 RLS 정책도 "내 행이면 모두 허용"이라, 가입한 누구나 자기 `is_admin`을 true로 바꿔 어드민 권한(문제 추가·수정, 후보 관리)을 얻을 수 있었다. 한도 예외를 `plan_tier`로 구현하려다 발견했고, 되돌리는 트랜잭션 안에서 실제로 재현한 뒤 수정했다. 수정 후 같은 시도는 모두 `permission denied`로 거부되고 `display_name` 수정과 본인 프로필 읽기는 유지된다.
+대안: 컬럼 변경을 막는 BEFORE UPDATE 트리거, 프로필을 분리한 테이블, `plan_tier`로 한도 예외 구현(위 취약점이 먼저 막혀야 가능).
+트레이드오프: 앞으로 회원이 프로필에 쓸 컬럼이 늘면 GRANT를 컬럼 단위로 추가해야 한다. 프로필 삭제(계정 삭제)는 service_role 서버 함수에서 처리해야 한다. 다른 테이블도 같은 유형(테이블 단위 GRANT + 소유자 정책 + 권한을 정하는 컬럼)이 없는지 출시 전에 점검할 것.
