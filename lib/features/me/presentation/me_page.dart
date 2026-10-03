@@ -17,7 +17,16 @@ class MePage extends ConsumerWidget {
     final user = userId == null ? null : ref.watch(supabaseClientProvider).auth.currentUser;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('내 정보')),
+      appBar: AppBar(
+        title: const Text('내 정보'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: '설정',
+            onPressed: () => context.push('/me/settings'),
+          ),
+        ],
+      ),
       body: ListView(
         children: [
           if (user != null)

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/legal/legal_links.dart';
 import '../domain/auth_exception.dart';
 import 'auth_providers.dart';
 import 'login_buttons.dart';
@@ -58,7 +59,14 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   '소셜 계정으로 로그인하면\n기기에 저장된 오답노트와 이력서가 계정으로 이동합니다.',
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 8),
+                Text(
+                  '로그인하면 이용약관·개인정보처리방침에 동의한 것으로 봅니다.',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const LegalLinkButtons(),
+                const SizedBox(height: 16),
                 KakaoLoginButton(enabled: !_isLoading, onPressed: () => _signIn(actions.signInWithKakao)),
                 const SizedBox(height: 12),
                 GoogleLoginButton(enabled: !_isLoading, onPressed: () => _signIn(actions.signInWithGoogle)),

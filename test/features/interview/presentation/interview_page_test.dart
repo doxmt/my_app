@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:my_app/core/consent/openai_consent_provider.dart';
+import 'package:my_app/core/legal/legal_links.dart';
 import 'package:my_app/features/interview/domain/interview_chat_client.dart';
 import 'package:my_app/features/interview/domain/interview_message.dart';
 import 'package:my_app/features/interview/domain/interview_repository.dart';
@@ -86,16 +88,33 @@ class StubInterviewChatClient implements InterviewChatClient {
   }
 }
 
+class FakeOpenAiConsentStore implements OpenAiConsentStore {
+  FakeOpenAiConsentStore({this.consented = false});
+
+  bool consented;
+
+  @override
+  Future<bool> read() async => consented;
+
+  @override
+  Future<void> write() async {
+    consented = true;
+  }
+}
+
 Widget _pageWith({
   required InterviewRepository interviewRepository,
   required InterviewChatClient chatClient,
   String selfIntroduction = '',
+  OpenAiConsentStore? consentStore,
 }) {
   return ProviderScope(
     overrides: [
       resumeRepositoryProvider.overrideWithValue(FakeResumeRepository(selfIntroduction: selfIntroduction)),
       interviewRepositoryProvider.overrideWithValue(interviewRepository),
       interviewChatClientProvider.overrideWithValue(chatClient),
+      openAiConsentStoreProvider.overrideWithValue(consentStore ?? FakeOpenAiConsentStore(consented: true)),
+      legalUrlsProvider.overrideWithValue(LegalUrls.fromOrigin('https://example.com')),
     ],
     child: const MaterialApp(home: InterviewPage()),
   );
@@ -297,5 +316,89 @@ void main() {
 
     expect(find.text('자기소개입니다'), findsOneWidget);
     expect(chatClient.callCount, 0);
+  });
+
+  group('OpenAI 전송 동의', () {
+    Future<void> enterJobAndStart(WidgetTester tester) async {
+      await tester.enterText(find.byType(TextField).first, '백엔드 개발자');
+      await tester.ensureVisible(find.text('면접 시작'));
+      await tester.tap(find.text('면접 시작'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('동의 전에는 면접이 시작되지 않고 동의 화면이 뜬다', (tester) async {
+      final repository = FakeInterviewRepository(null);
+      final store = FakeOpenAiConsentStore();
+      await tester.pumpWidget(
+        _pageWith(
+          interviewRepository: repository,
+          chatClient: StubInterviewChatClient(),
+          consentStore: store,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await enterJobAndStart(tester);
+
+      expect(find.textContaining('OpenAI(미국)'), findsOneWidget);
+      expect(await repository.fetch(), isNull);
+      expect(store.consented, isFalse);
+    });
+
+    testWidgets('동의 화면에서 취소하면 시작되지 않는다', (tester) async {
+      final repository = FakeInterviewRepository(null);
+      await tester.pumpWidget(
+        _pageWith(
+          interviewRepository: repository,
+          chatClient: StubInterviewChatClient(),
+          consentStore: FakeOpenAiConsentStore(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await enterJobAndStart(tester);
+      await tester.tap(find.text('동의하지 않음'));
+      await tester.pumpAndSettle();
+
+      expect(await repository.fetch(), isNull);
+      expect(find.text('면접 시작'), findsOneWidget);
+    });
+
+    testWidgets('동의하고 시작하면 저장되고 면접이 시작된다', (tester) async {
+      final repository = FakeInterviewRepository(null);
+      final store = FakeOpenAiConsentStore();
+      await tester.pumpWidget(
+        _pageWith(
+          interviewRepository: repository,
+          chatClient: StubInterviewChatClient(),
+          consentStore: store,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await enterJobAndStart(tester);
+      await tester.tap(find.text('동의하고 시작'));
+      await tester.pumpAndSettle();
+
+      expect(store.consented, isTrue);
+      expect((await repository.fetch())?.jobTitle, '백엔드 개발자');
+    });
+
+    testWidgets('이미 동의한 기기는 다시 묻지 않는다', (tester) async {
+      final repository = FakeInterviewRepository(null);
+      await tester.pumpWidget(
+        _pageWith(
+          interviewRepository: repository,
+          chatClient: StubInterviewChatClient(),
+          consentStore: FakeOpenAiConsentStore(consented: true),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await enterJobAndStart(tester);
+
+      expect(find.textContaining('OpenAI(미국)'), findsNothing);
+      expect((await repository.fetch())?.jobTitle, '백엔드 개발자');
+    });
   });
 }

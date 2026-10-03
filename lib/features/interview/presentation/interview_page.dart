@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/consent/openai_consent_provider.dart';
+import '../../../core/legal/legal_links.dart';
 import '../../../core/speech/dictation_button.dart';
 import '../../resume/domain/self_intro_extractor.dart';
 import '../../resume/presentation/resume_providers.dart';
@@ -136,6 +138,15 @@ class _JobSetupFormState extends ConsumerState<_JobSetupForm> {
       return;
     }
 
+    // OpenAI(미국) 전송 동의 전에는 시작하지 않는다. 한 번 동의하면 다시 묻지 않는다.
+    final consented = await ref.read(openAiConsentProvider.future).catchError((_) => false);
+    if (!consented) {
+      if (!mounted) return;
+      final agreed = await showDialog<bool>(context: context, builder: (_) => const _OpenAiConsentDialog());
+      if (agreed != true || !mounted) return;
+      await ref.read(openAiConsentProvider.notifier).grant();
+    }
+
     // 자기소개로 시작하면 자기소개가 첫 사용자 메시지가 된다. 면접관 응답은 채팅 화면이 한 번만 요청한다.
     final session = InterviewSession(
       jobTitle: jobTitle,
@@ -219,6 +230,36 @@ class _JobSetupFormState extends ConsumerState<_JobSetupForm> {
           ElevatedButton(onPressed: _start, child: const Text('면접 시작')),
         ],
       ),
+    );
+  }
+}
+
+class _OpenAiConsentDialog extends StatelessWidget {
+  const _OpenAiConsentDialog();
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('AI 모의면접 데이터 전송 동의'),
+      content: const SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '모의면접에서 입력한 이력서·채용공고·자기소개·대화가 AI 응답 생성을 위해 OpenAI(미국)로 전송됩니다. '
+              '비회원의 이력서·대화 기록은 기기에만 저장됩니다. '
+              '동의하지 않으면 모의면접은 이용할 수 없지만 문제풀이 등 다른 기능은 그대로 이용할 수 있습니다.',
+            ),
+            SizedBox(height: 8),
+            LegalLinkButtons(),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('동의하지 않음')),
+        FilledButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('동의하고 시작')),
+      ],
     );
   }
 }
