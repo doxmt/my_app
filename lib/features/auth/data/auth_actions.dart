@@ -72,4 +72,17 @@ class AuthActions {
       throw const AuthActionException('로그아웃에 실패했습니다. 다시 시도해주세요.');
     }
   }
+
+  /// 계정을 즉시 삭제한다. `delete-account` Edge Function이 요청 JWT의 사용자만 지운다.
+  Future<void> deleteAccount() async {
+    try {
+      await _client.functions.invoke('delete-account');
+    } catch (_) {
+      throw const AuthActionException('계정 삭제에 실패했습니다. 다시 시도해주세요.');
+    }
+    // 서버 계정은 이미 없으므로 기기에 남은 세션만 지운다.
+    try {
+      await _client.auth.signOut(scope: SignOutScope.local);
+    } catch (_) {}
+  }
 }
