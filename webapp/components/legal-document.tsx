@@ -1,15 +1,6 @@
 import type { ReactNode } from "react";
 import { Page } from "@/components/page-state";
 
-/** 사용자가 채워야 하는 값. 눈에 띄게 표시해 배포 전에 놓치지 않게 한다. */
-export function Placeholder({ children }: { children: ReactNode }) {
-  return (
-    <mark className="rounded bg-amber-200 px-1 font-medium text-amber-950 dark:bg-amber-400/25 dark:text-amber-200">
-      [확정 필요: {children}]
-    </mark>
-  );
-}
-
 /** 방침·약관 공통 틀. 상단에 초안 안내를 둔다. */
 export function LegalDocument({ title, children }: { title: string; children: ReactNode }) {
   return (

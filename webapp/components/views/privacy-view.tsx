@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LegalDocument, LegalSection, Placeholder, TransferTable } from "@/components/legal-document";
+import { LegalDocument, LegalSection, TransferTable } from "@/components/legal-document";
 
 /** 개인정보처리방침(초안). */
 export function PrivacyView() {
@@ -7,7 +7,7 @@ export function PrivacyView() {
     <LegalDocument title="개인정보처리방침">
       <LegalSection heading="1. 총칙">
         <p>
-          개인 개발자 <Placeholder>운영자 이름</Placeholder>(이하 &quot;운영자&quot;)는 DevInterview(이하 &quot;서비스&quot;)를
+          개인 개발자 송태하(이하 &quot;운영자&quot;)는 DevInterview(이하 &quot;서비스&quot;)를
           제공하면서 이용자의 개인정보를 소중히 다루며, 개인정보 보호법 등 관련 법령을 따릅니다. 이 방침은 서비스가
           어떤 정보를 어떤 목적으로 처리하고, 누구에게 맡기며, 언제 파기하는지 알려 드립니다.
         </p>
@@ -205,10 +205,10 @@ export function PrivacyView() {
       <LegalSection heading="8. 개인정보 보호책임자">
         <ul>
           <li>
-            운영자 겸 보호책임자: <Placeholder>운영자 이름</Placeholder> (개인 개발자)
+            운영자 겸 보호책임자: 송태하 (개인 개발자)
           </li>
           <li>
-            연락처(이메일): <Placeholder>문의 이메일</Placeholder>
+            연락처(이메일): songtaeha@naver.com
           </li>
         </ul>
       </LegalSection>
