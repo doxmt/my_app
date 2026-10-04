@@ -3,13 +3,20 @@
 import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { DifficultyBadge } from "@/components/difficulty-badge";
 import { EmptyState, ErrorState, LoadingState, Page, PageHeader, StatBar } from "@/components/page-state";
 import { fetchCategoryBySlug, fetchQuestionsByCategory } from "@/lib/data/supabase-data";
 import type { PracticeMode } from "@/lib/models";
 import { getBrowserClient } from "@/lib/supabase/client";
 import { useAsync } from "@/lib/use-async";
+
+const DIFFICULTY_FILTERS: { value: string | null; label: string }[] = [
+  { value: null, label: "전체" },
+  { value: "easy", label: "쉬움" },
+  { value: "medium", label: "보통" },
+  { value: "hard", label: "어려움" },
+];
 
 /**
  * 문제 목록. 학습하기는 주제의 문제를 전부 나열하고,
@@ -25,6 +32,8 @@ export function QuestionListView({
   topicSlug: string;
 }) {
   const router = useRouter();
+  // 학습하기 목록의 난이도 필터. null이면 전체.
+  const [difficulty, setDifficulty] = useState<string | null>(null);
   const { data, error, loading, reload } = useAsync(`questions:${topicSlug}`, async () => {
     const client = getBrowserClient();
     const topic = await fetchCategoryBySlug(client, topicSlug);
@@ -56,7 +65,8 @@ export function QuestionListView({
     );
 
   const modeLabel = mode === "study" ? "학습하기" : "문제풀기";
-  const count = (difficulty: string) => data.questions.filter((q) => q.difficulty === difficulty).length;
+  const count = (value: string) => data.questions.filter((q) => q.difficulty === value).length;
+  const visible = difficulty ? data.questions.filter((q) => q.difficulty === difficulty) : data.questions;
 
   return (
     <Page>
@@ -84,6 +94,23 @@ export function QuestionListView({
               { label: "어려움", value: count("hard") },
             ]}
           />
+          <div role="group" aria-label="난이도 필터" className="mb-4 flex flex-wrap gap-2">
+            {DIFFICULTY_FILTERS.map((filter) => (
+              <button
+                key={filter.label}
+                type="button"
+                aria-pressed={difficulty === filter.value}
+                onClick={() => setDifficulty(filter.value)}
+                className={`rounded-full border px-3 py-1 text-sm transition-colors ${
+                  difficulty === filter.value
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "bg-card text-muted-foreground hover:bg-accent/50"
+                }`}
+              >
+                {filter.label}
+              </button>
+            ))}
+          </div>
           <div className="overflow-hidden rounded-xl border bg-card">
             <div
               aria-hidden
@@ -95,8 +122,11 @@ export function QuestionListView({
               <span>태그</span>
               <span />
             </div>
+            {visible.length === 0 && (
+              <p className="px-5 py-10 text-center text-sm text-muted-foreground">이 난이도의 문제가 없습니다.</p>
+            )}
             <ol className="divide-y">
-              {data.questions.map((question, index) => (
+              {visible.map((question, index) => (
                 <li key={question.id}>
                   <Link
                     href={`/categories/${fieldSlug}/${mode}/${topicSlug}/${question.id}`}

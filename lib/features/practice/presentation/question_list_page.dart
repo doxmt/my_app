@@ -8,6 +8,9 @@ import '../../categories/presentation/categories_providers.dart';
 import '../domain/practice_mode.dart';
 import 'practice_providers.dart';
 
+/// 난이도 값(`questions.difficulty`)과 화면 표시 이름. 웹의 난이도 배지와 같은 이름을 쓴다.
+const _difficultyLabels = {'easy': '쉬움', 'medium': '보통', 'hard': '어려움'};
+
 /// 문제 목록 화면.
 ///
 /// 학습하기는 주제에 속한 문제를 전부 나열해 원하는 것을 골라 보게 한다.
@@ -31,6 +34,9 @@ class QuestionListPage extends ConsumerStatefulWidget {
 
 class _QuestionListPageState extends ConsumerState<QuestionListPage> {
   bool _redirected = false;
+
+  /// 학습하기 목록의 난이도 필터. null이면 전체.
+  String? _difficulty;
 
   void _redirectToRandomQuestion(String questionId) {
     if (_redirected) return;
@@ -92,24 +98,55 @@ class _QuestionListPageState extends ConsumerState<QuestionListPage> {
                 return const Center(child: CircularProgressIndicator());
               }
 
-              return ListView.builder(
-                itemCount: questions.length,
-                itemBuilder: (context, index) {
-                  final question = questions[index];
-                  return ListTile(
-                    title: Text(
-                      question.prompt,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+              final visible = _difficulty == null
+                  ? questions
+                  : questions.where((question) => question.difficulty == _difficulty).toList();
+
+              return Column(
+                children: [
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Row(
+                      children: [
+                        for (final entry in <String?, String>{null: '전체', ..._difficultyLabels}.entries)
+                          Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: ChoiceChip(
+                              label: Text(entry.value),
+                              selected: _difficulty == entry.key,
+                              onSelected: (_) => setState(() => _difficulty = entry.key),
+                            ),
+                          ),
+                      ],
                     ),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () {
-                      context.push(
-                        '/categories/${widget.fieldSlug}/${widget.mode.pathValue}/${widget.topicSlug}/${question.id}',
-                      );
-                    },
-                  );
-                },
+                  ),
+                  Expanded(
+                    child: visible.isEmpty
+                        ? const Center(child: Text('이 난이도의 문제가 없습니다.'))
+                        : ListView.builder(
+                            itemCount: visible.length,
+                            itemBuilder: (context, index) {
+                              final question = visible[index];
+                              final difficultyLabel = _difficultyLabels[question.difficulty];
+                              return ListTile(
+                                title: Text(
+                                  question.prompt,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                subtitle: difficultyLabel == null ? null : Text(difficultyLabel),
+                                trailing: const Icon(Icons.chevron_right),
+                                onTap: () {
+                                  context.push(
+                                    '/categories/${widget.fieldSlug}/${widget.mode.pathValue}/${widget.topicSlug}/${question.id}',
+                                  );
+                                },
+                              );
+                            },
+                          ),
+                  ),
+                ],
               );
             },
           );
