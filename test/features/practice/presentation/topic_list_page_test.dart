@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:my_app/features/categories/domain/category.dart';
 import 'package:my_app/features/categories/domain/category_repository.dart';
+import 'package:my_app/features/categories/domain/field_stats.dart';
 import 'package:my_app/features/categories/presentation/categories_providers.dart';
 import 'package:my_app/features/practice/domain/practice_mode.dart';
 import 'package:my_app/features/practice/domain/question.dart';
@@ -28,6 +29,9 @@ class _FakeCategoryRepository implements CategoryRepository {
   Future<Category> fetchCategoryBySlug(String slug) async {
     return _categories.firstWhere((category) => category.slug == slug);
   }
+
+  @override
+  Future<Map<String, FieldStats>> fetchFieldStats() async => const {};
 }
 
 class _FakeQuestionRepository implements QuestionRepository {

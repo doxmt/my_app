@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_app/features/categories/domain/category.dart';
 import 'package:my_app/features/categories/domain/category_repository.dart';
+import 'package:my_app/features/categories/domain/field_stats.dart';
 import 'package:my_app/features/categories/presentation/categories_providers.dart';
 import 'package:my_app/features/resume/domain/resume.dart';
 import 'package:my_app/features/resume/domain/resume_repository.dart';
@@ -53,6 +54,9 @@ class FakeCategoryRepository implements CategoryRepository {
     }
     return _categories.firstWhere((category) => category.slug == slug);
   }
+
+  @override
+  Future<Map<String, FieldStats>> fetchFieldStats() async => const {'c1': FieldStats(topicCount: 2, questionCount: 6)};
 }
 
 class FakeWrongNoteRepository implements WrongNoteRepository {
@@ -116,6 +120,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('CS'), findsOneWidget);
+    expect(find.text('주제 2 · 문제 6'), findsOneWidget);
   });
 
   testWidgets('네트워크 오류가 나면 에러 문구와 재시도 버튼을 보여준다', (tester) async {

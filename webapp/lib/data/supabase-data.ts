@@ -42,6 +42,34 @@ export async function fetchTopLevelCategories(client: SupabaseClient): Promise<C
   return (data as Row[]).map(categoryFromRow);
 }
 
+export type FieldStats = { topics: number; questions: number };
+
+/** 주제 행(`parent_id`, `questions: [{ count }]`) 목록을 분야 id별 합계로 묶는다. */
+export function summarizeFieldStats(
+  topicRows: { parent_id: string | null; questions: { count: number }[] | null }[],
+): Record<string, FieldStats> {
+  const stats: Record<string, FieldStats> = {};
+  for (const row of topicRows) {
+    if (!row.parent_id) continue;
+    const current = stats[row.parent_id] ?? { topics: 0, questions: 0 };
+    stats[row.parent_id] = {
+      topics: current.topics + 1,
+      questions: current.questions + (row.questions?.[0]?.count ?? 0),
+    };
+  }
+  return stats;
+}
+
+/** 분야 id별 주제 수·게시된 문제 수(홈 분야 카드용). 주제마다 문제 수를 함께 받아 요청 한 번으로 센다. */
+export async function fetchFieldStats(client: SupabaseClient): Promise<Record<string, FieldStats>> {
+  const { data, error } = await client
+    .from("categories")
+    .select("parent_id, questions(count)")
+    .not("parent_id", "is", null);
+  if (error) throw error;
+  return summarizeFieldStats(data as { parent_id: string | null; questions: { count: number }[] | null }[]);
+}
+
 export async function fetchChildCategories(client: SupabaseClient, parentId: string): Promise<Category[]> {
   const { data, error } = await client
     .from("categories")

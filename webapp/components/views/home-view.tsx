@@ -6,7 +6,7 @@ import { CategoryIcon } from "@/components/category-icon";
 import { EmptyState, ErrorState, LoadingState, Page } from "@/components/page-state";
 import { PracticeDemo } from "@/components/practice-demo";
 import { buttonVariants } from "@/components/ui/button";
-import { fetchTopLevelCategories } from "@/lib/data/supabase-data";
+import { fetchFieldStats, fetchTopLevelCategories } from "@/lib/data/supabase-data";
 import { getBrowserClient } from "@/lib/supabase/client";
 import { useAsync } from "@/lib/use-async";
 
@@ -79,6 +79,8 @@ function Hero() {
 /** 홈: 짧은 소개 히어로 + 분야 카드 그리드. */
 export function HomeView() {
   const { data, error, loading, reload } = useAsync("categories", () => fetchTopLevelCategories(getBrowserClient()));
+  // 카드의 주제 수·문제 수. 실패해도 카드는 그대로 보이고 숫자만 빠진다.
+  const { data: stats } = useAsync("field-stats", () => fetchFieldStats(getBrowserClient()).catch(() => null));
 
   return (
     <>
@@ -115,6 +117,11 @@ export function HomeView() {
                     <p className="mt-1.5 line-clamp-2 flex-1 text-sm leading-relaxed text-muted-foreground">
                       {category.description ?? "분야별 서술형 문제"}
                     </p>
+                    {stats?.[category.id] && (
+                      <p className="mt-3 font-mono text-xs text-muted-foreground">
+                        주제 {stats[category.id].topics} · 문제 {stats[category.id].questions}
+                      </p>
+                    )}
                     <div className="mt-5 flex items-center justify-between border-t pt-4">
                       <span className="flex gap-1.5 text-xs text-muted-foreground">
                         <span className="rounded bg-muted px-1.5 py-0.5">학습하기</span>

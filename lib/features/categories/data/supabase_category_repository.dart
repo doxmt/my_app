@@ -2,6 +2,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../domain/category.dart';
 import '../domain/category_repository.dart';
+import '../domain/field_stats.dart';
 
 class SupabaseCategoryRepository implements CategoryRepository {
   SupabaseCategoryRepository(this._client);
@@ -35,5 +36,16 @@ class SupabaseCategoryRepository implements CategoryRepository {
     final row = await _client.from('categories').select().eq('slug', slug).single();
 
     return Category.fromJson(row);
+  }
+
+  @override
+  Future<Map<String, FieldStats>> fetchFieldStats() async {
+    // 주제마다 문제 수를 함께 받아 한 번의 요청으로 센다. RLS로 게시된 문제만 세어진다.
+    final rows = await _client
+        .from('categories')
+        .select('parent_id, questions(count)')
+        .not('parent_id', 'is', null);
+
+    return summarizeFieldStats(rows);
   }
 }
