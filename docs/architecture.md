@@ -4,7 +4,7 @@
 
 - **앱**: Flutter (Android / iOS), Riverpod(상태관리), go_router(라우팅). Web은 Flutter 웹 빌드가 컷오버 전까지 Production, 컷오버 후에는 아래 Next.js 웹이 대체한다 (ADR-019)
 - **웹**: `webapp/` Next.js 16 (App Router, TypeScript, Tailwind v4 + shadcn/ui, Vitest). 클라이언트 컴포넌트 중심, 비회원 데이터는 localStorage. Supabase는 `@supabase/ssr`(브라우저 `createBrowserClient`, 서버 `createServerClient`), 세션 갱신은 `proxy.ts`(`getClaims()`). env는 `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` / `ALLOWED_ORIGINS`(PDF 함수 CORS)
-- **백엔드**: Supabase — Postgres(+pgvector), Auth(OAuth: Google/GitHub/Kakao, ADR-022), Edge Functions(Deno)
+- **백엔드**: Supabase — Postgres(+pgvector), Auth(OAuth: Kakao/GitHub + iOS 앱 전용 Apple, 구글은 첫 출시에서 버튼 숨김, ADR-025), Edge Functions(Deno)
 - **LLM**: Anthropic / OpenAI — Edge Function 내부 어댑터로 교체 가능 (`LLM_PROVIDER` env var)
 - **PDF 추출**: Vercel Node 서버리스 함수 (`unpdf` 라이브러리). 컷오버 전에는 루트 `api/parse-pdf.ts`(Flutter 웹과 함께 배포), 이후에는 `webapp/app/api/parse-pdf/route.ts`(Route Handler, raw 바이트 본문, 같은 경로 `/api/parse-pdf`)가 이어받고 모바일 앱도 이 엔드포인트를 쓴다
 - **어드민**: 별도 웹앱, Vite + React + TypeScript, Tailwind v4 + shadcn/ui (M5-a). 로그인은 고정 관리자 계정 + 비밀번호 전용 화면(`signInWithPassword` 내부 호출, ADR-016)
@@ -26,18 +26,21 @@ lib/
     error/             Result / Failure 타입
     theme/             theme_mode_provider.dart (라이트/다크 저장·상태, 기본 라이트)
     speech/            dictation.dart(순수 로직), dictation_button.dart (마이크 음성 입력)
+    consent/           OpenAI 전송 동의 상태 (기기 저장)
+    legal/             방침·약관 URL과 링크 버튼 (외부 브라우저)
   features/
     categories/        카테고리 탐색
     practice/          문제풀이 흐름
     wrong_notes/       오답노트
     resume/            이력서 입력
     interview/         모의면접 채팅 (남은 사용량 배너 포함)
-    auth/              OAuth 로그인 (Google/GitHub), 로그인 시 로컬 데이터(오답노트·이력서) 자동 이전
+    auth/              OAuth 로그인 (Kakao/GitHub, iOS는 Apple 네이티브), 계정 삭제, 로그인 시 로컬 데이터(오답노트·이력서) 자동 이전
+    me/                내 정보, 설정 화면(방침·약관 링크, 앱 버전, 계정 삭제)
 
 api/                   Vercel Node 서버리스 함수 (parse-pdf.ts, PDF 텍스트 추출). Root Directory가 `webapp/`이 되면 빌드에서 쓰이지 않으며 컷오버 안정화 후 정리
 
 webapp/                Next.js 웹 클라이언트 (M6). 기존 루트 Vercel 프로젝트의 Root Directory=webapp/
-  app/                 라우트: / · /categories/... · /interview · /me · /me/login · /me/resume · /me/wrong-notes/... · /auth/callback · /api/parse-pdf
+  app/                 라우트: / · /categories/... · /interview · /me · /me/login · /me/resume · /me/wrong-notes/... · /privacy · /terms · /auth/callback · /api/parse-pdf
   components/          화면(views/), 앱 셸(상단 내비 + 푸터, 좁은 화면은 햄버거), UserIdProvider, theme-toggle/setting/sync(화면 모드), mic-button(음성 입력)
   lib/                 supabase/(client·server·proxy), storage/(localStorage, Flutter 호환 형식), data/(로컬·Supabase 리포지토리), auth/(로컬→DB 이전, 안전한 next 경로), interview/(SSE 파서, 채팅 클라이언트), theme.ts·theme-client.ts(화면 모드), speech.ts(음성 입력 순수 로직)
 
@@ -45,6 +48,7 @@ supabase/
   migrations/          스키마, RLS, GRANT, RPC
   functions/
     interview-chat/    모의면접 + LLM 어댑터
+    delete-account/    계정 삭제 (service_role, Apple 토큰 철회)
     content-pipeline/  문제 수집 → 초안 → 중복 비교 (M5)
 
 admin/                 Vite+React 어드민 웹앱 (M5-a), 별도 Vercel 프로젝트(Root Directory=admin/)로 배포
@@ -63,6 +67,8 @@ admin/                 Vite+React 어드민 웹앱 (M5-a), 별도 Vercel 프로�
 - **홈 분야 카드 아이콘**: 각 분야의 아이콘은 `categories.slug` → `IconData` 매핑을 Flutter 앱 코드에서만 처리한다. DB 컬럼 추가 없음. 새 분야 추가 시마다 앱 매핑 코드를 업데이트하고 배포해야 한다.
 - **화면 모드(라이트/다크)**: 웹·앱 모두 기본은 **라이트**이고 기기 설정을 따르지 않는다. 사용자가 라이트/다크를 골라 바꾸며 기기별로 저장한다(웹 `localStorage`의 `theme` + `<html>`의 `dark` 클래스를 첫 페인트 전 인라인 스크립트로 적용, 앱 `SharedPreferences`의 `theme_mode`를 `main`에서 미리 읽어 `initialThemeModeProvider`로 주입). 색 토큰은 CSS(`webapp/app/globals.css`)와 Dart(`lib/app/theme.dart`)에 같은 값으로 따로 있으므로 한쪽을 바꾸면 다른 쪽도 맞춘다 (ADR-020).
 - **음성 입력**: 모의면접 입력창과 문제풀기 답변창에서 마이크로 입력한다. 웹은 브라우저 Web Speech API, 앱은 `speech_to_text`(기기 내장 음성인식)를 쓰고, 인식된 글을 입력창 뒤에 채운 뒤 사용자가 확인하고 직접 전송한다. 오디오를 앱 서버(Edge Function)로 보내지 않으므로 STT용 LLM 호출·키가 필요 없다 (ADR-021).
+- **계정 삭제**: `delete-account` Edge Function만 service_role로 `auth.admin.deleteUser`를 호출한다. 삭제 대상은 요청 JWT의 사용자뿐이고 본문의 user_id는 쓰지 않는다. 회원 테이블은 FK cascade로 지워진다. Apple 회원은 앱이 재인증으로 받은 `authorizationCode`로 토큰을 먼저 철회하고, 실패하면 삭제하지 않는다 (ADR-026).
+- **OpenAI 전송 동의**: 면접 첫 시작 전에 한 번 동의를 받고 상태를 기기에 저장한다(앱 `shared_preferences`, 웹 `localStorage`). 미동의면 면접만 막는다 (ADR-027).
 - **딥링크**: iOS는 `CFBundleURLTypes`, Android는 intent-filter에 커스텀 스킴(reverse-domain 형식)을 등록하고, 앱에서 `go_router`의 deep link 처리로 대응한다. 스킴 값은 이번 작업(Apple/Kakao 로그인) 계획 단계에서 확정한다.
 
 ## 데이터 모델
@@ -123,6 +129,11 @@ PDF → Vercel 파싱 함수(`/api/parse-pdf`)로 직접 전송 → 추출된 �
 OAuth 로그인 → 기기의 오답노트·이력서를 DB로 업로드 (자동, 확인 화면 없음)
   → 정책: 오답노트는 `unique(user_id, question_id)` 기준 중복 무시 병합, 이력서는 서버 우선(기존이면 업로드 안 함), 성공한 항목만 로컬 삭제
   → 한도: guest → free
+
+[계정 삭제 — ADR-026]
+앱 설정 화면 / 웹 내 정보의 "계정 삭제" → 확인 → (Apple 회원은 재인증으로 authorizationCode 획득)
+  → delete-account (JWT) → (Apple 회원: 코드 교환 → refresh token 철회) → auth.admin.deleteUser → FK cascade
+  → 기기 세션 정리 → 비회원 상태
 
 [콘텐츠 관리 — M5-a]
 어드민 로그인(비밀번호 전용 화면 → 고정 계정으로 signInWithPassword) → is_admin 확인

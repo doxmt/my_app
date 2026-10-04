@@ -21,6 +21,9 @@
 - Supabase 프로젝트는 새 테이블을 Data API에 자동 노출하지 않고 RLS를 자동으로 켠다. 마이그레이션에 `GRANT`와 RLS 정책(공개 테이블의 select 포함)을 반드시 함께 쓴다.
 - `categories`/`questions`는 앱에서 쓰기 불가다. M5-a부터는 콘텐츠 추가·수정을 어드민 웹앱(`admin/`)에서 직접 한다 — SQL 마이그레이션으로 시드하거나 이를 위해 PR을 만들지 않는다. 스키마·권한(GRANT/RLS/함수) 변경만 마이그레이션 파일로 남긴다.
 - PDF 텍스트 추출은 클라이언트나 Edge Function에서 하지 않는다 (Vercel Node 함수 담당).
+- 계정 삭제는 `delete-account` Edge Function에서만 한다(service_role). 삭제 대상은 요청 JWT의 사용자뿐이고 본문의 user_id를 쓰지 않는다. Apple 회원은 토큰 철회가 실패하면 삭제하지 않는다 (ADR-026).
+- Apple 로그인 버튼은 iOS 앱에서만 보인다. 웹·Android에 추가하지 않는다. 구글 로그인은 첫 출시에서 버튼만 숨겼다 (ADR-025).
+- LLM 벤더나 위탁업체를 바꾸면 면접 동의 화면 문구와 `/privacy`의 국외 이전 표를 함께 고친다 (ADR-027).
 - 어드민(`admin/`)은 Flutter가 아닌 React 웹앱이다.
 - 사용자용 웹은 컷오버 후 Flutter가 아닌 `webapp/`의 Next.js 앱이다 (ADR-019, M6). Android/iOS만 Flutter다. 웹과 Flutter 앱은 URL 경로와 비회원 저장 형식(localStorage/`shared_preferences`의 `{ version: 1, items }`)을 맞춰 둔다.
 - 웹 클라이언트는 `interview-chat` Edge Function을 브라우저에서 직접 호출한다. Next 서버(Route Handler/Server Action)로 프록시하지 않는다 — 모든 요청이 Vercel IP로 잡혀 `guest_ip` 한도가 무너진다. Next 서버에도 LLM 호출·키를 두지 않는다.

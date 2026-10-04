@@ -99,6 +99,16 @@
 - 완료 기준: Chrome · macOS Safari · iOS Safari · Android Chrome에서 Flutter 웹과 동등 기능 확인(면접 스트리밍이 점진 표시됨), 로그인 4종 성공, 컷오버 전후로 모바일 PDF 업로드가 끊기지 않음, CI(`test`/`admin`/`webapp`) 통과
 - 컷오버 후 별도 정리: Flutter 웹 빌드 경로(루트 `vercel.json`, `scripts/vercel-build.sh`, 루트 `api/parse-pdf.ts`, Flutter `web/`)
 
+## M6 이후: iOS 앱스토어 출시 + 웹 컷오버
+- 범위: iOS 출시 + 웹 컷오버. Android 스토어 출시는 이후 (ADR-025). 계획: `docs/plans/ios-release-cutover.md`
+- 방침·약관(`/privacy`·`/terms`) + 면접 첫 사용 OpenAI 전송 동의 (ADR-027)
+- 계정 삭제(`delete-account`, Apple 토큰 철회 포함) (ADR-026)
+- Apple 로그인 재도입(iOS 앱 전용), 첫 출시에서 구글 로그인 버튼 숨김 (ADR-025)
+- iOS 출시 자산: 앱 아이콘·스플래시·Privacy Manifest·암호화 신고 키
+- 웹 컷오버: 브라우저별 실측 후 develop → main 릴리즈 push 1회, Supabase Site URL을 운영 도메인으로
+- App Store Connect 등록 → TestFlight → 심사 제출
+- 완료 기준: 운영 도메인에서 방침·약관·PDF·로그인·계정 삭제 동작, TestFlight 실기기 전체 여정 통과, 심사 제출
+
 ## M7. 폴리시/QA
 - 로딩·에러·빈 상태 정리, 오프라인 처리, 접근성 (Flutter, Next 웹 모두)
 - (기존 M6의 "웹 전용 레이아웃" 항목은 새 M6 Next.js 웹 전환으로 흡수됨)
