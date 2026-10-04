@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useState } from "react";
 import { getBrowserClient } from "@/lib/supabase/client";
 
@@ -68,6 +69,17 @@ export function LoginView({ next, failed }: { next: string; failed: boolean }) {
             <span className="flex-1 text-center">GitHub로 로그인</span>
           </button>
         </div>
+        <p className="mt-4 text-center text-xs text-muted-foreground">
+          로그인하면{" "}
+          <Link href="/terms" className="underline underline-offset-2 hover:text-foreground">
+            이용약관
+          </Link>
+          ·
+          <Link href="/privacy" className="underline underline-offset-2 hover:text-foreground">
+            개인정보처리방침
+          </Link>
+          에 동의한 것으로 봅니다.
+        </p>
         {error && (
           <p role="alert" className="mt-4 text-center text-sm text-destructive">
             {error}

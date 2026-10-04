@@ -20,8 +20,9 @@ import {
   type UsageStatus,
 } from "@/lib/interview/chat-client";
 import type { InterviewMessage, InterviewSession } from "@/lib/models";
+import { readOpenAiConsent, writeOpenAiConsent } from "@/lib/openai-consent";
 import { MAX_SELF_INTRODUCTION_CHARS } from "@/lib/resume/self-intro";
-import { readInterviewSession, writeInterviewSession } from "@/lib/storage/local-store";
+import { getBrowserStorage, readInterviewSession, writeInterviewSession } from "@/lib/storage/local-store";
 import { getBrowserClient } from "@/lib/supabase/client";
 import { useAsync } from "@/lib/use-async";
 
@@ -130,6 +131,7 @@ function JobSetupForm({
   const [startWithIntro, setStartWithIntro] = useState(false);
   const [intro, setIntro] = useState(selfIntroduction);
   const [introError, setIntroError] = useState(false);
+  const [consentOpen, setConsentOpen] = useState(false);
 
   function start() {
     const title = jobTitle.trim();
@@ -139,6 +141,23 @@ function JobSetupForm({
       setIntroError(true);
       return;
     }
+    // OpenAI(미국) 전송 동의 전에는 시작하지 않는다. 한 번 동의하면 다시 묻지 않는다.
+    if (!readOpenAiConsent(getBrowserStorage())) {
+      setConsentOpen(true);
+      return;
+    }
+    begin();
+  }
+
+  function agreeAndStart() {
+    writeOpenAiConsent(getBrowserStorage());
+    setConsentOpen(false);
+    begin();
+  }
+
+  function begin() {
+    const title = jobTitle.trim();
+    const firstMessage = intro.trim();
     // 자기소개로 시작하면 자기소개가 첫 사용자 메시지가 된다. 면접관 응답은 채팅 화면이 한 번만 요청한다.
     writeInterviewSession({
       jobTitle: title,
@@ -232,11 +251,47 @@ function JobSetupForm({
           </div>
         )}
       </section>
-      <div className="flex justify-end">
-        <Button size="lg" onClick={start}>
-          면접 시작
-        </Button>
-      </div>
+      {consentOpen && (
+        <section
+          role="alertdialog"
+          aria-labelledby="consent-heading"
+          aria-describedby="consent-body"
+          className="rounded-lg border border-primary/40 bg-muted/50 p-4"
+        >
+          <h2 id="consent-heading" className="mb-2 text-sm font-semibold">
+            AI 모의면접 데이터 전송 동의
+          </h2>
+          <p id="consent-body" className="text-sm leading-relaxed">
+            모의면접에서 입력한 이력서·채용공고·자기소개·대화가 AI 응답 생성을 위해 OpenAI(미국)로 전송됩니다.
+            비회원의 이력서·대화 기록은 기기에만 저장됩니다. 동의하지 않으면 모의면접은 이용할 수 없지만 문제풀이 등
+            다른 기능은 그대로 이용할 수 있습니다.
+          </p>
+          <p className="mt-2 text-xs text-muted-foreground">
+            자세한 내용은{" "}
+            <Link href="/privacy" target="_blank" className="underline underline-offset-2 hover:text-foreground">
+              개인정보처리방침
+            </Link>
+            과{" "}
+            <Link href="/terms" target="_blank" className="underline underline-offset-2 hover:text-foreground">
+              이용약관
+            </Link>
+            을 확인하세요.
+          </p>
+          <div className="mt-4 flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setConsentOpen(false)}>
+              동의하지 않음
+            </Button>
+            <Button onClick={agreeAndStart}>동의하고 시작</Button>
+          </div>
+        </section>
+      )}
+      {!consentOpen && (
+        <div className="flex justify-end">
+          <Button size="lg" onClick={start}>
+            면접 시작
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

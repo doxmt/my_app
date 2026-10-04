@@ -5,6 +5,7 @@ import '../features/auth/presentation/login_page.dart';
 import '../features/categories/presentation/categories_page.dart';
 import '../features/interview/presentation/interview_page.dart';
 import '../features/me/presentation/me_page.dart';
+import '../features/me/presentation/settings_page.dart';
 import '../features/practice/domain/practice_mode.dart';
 import '../features/practice/presentation/field_page.dart';
 import '../features/practice/presentation/question_detail_page.dart';
@@ -111,6 +112,10 @@ final routerProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: 'login',
                     builder: (context, state) => const LoginPage(),
+                  ),
+                  GoRoute(
+                    path: 'settings',
+                    builder: (context, state) => const SettingsPage(),
                   ),
                   GoRoute(
                     path: 'resume',
