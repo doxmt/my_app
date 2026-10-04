@@ -40,4 +40,10 @@ class AppleAuthClient {
       fullName: appleDisplayName(credential.givenName, credential.familyName),
     );
   }
+
+  /// 계정 삭제 직전 재인증. 서버가 Apple 토큰을 철회할 때 쓸 authorizationCode를 반환한다.
+  Future<String> getAuthorizationCode() async {
+    final credential = await SignInWithApple.getAppleIDCredential(scopes: const []);
+    return credential.authorizationCode;
+  }
 }

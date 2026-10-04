@@ -13,6 +13,9 @@ class FakeAppleAuthClient implements AppleAuthClient {
 
   @override
   Future<({String idToken, String rawNonce, String? fullName})> signInAndGetIdToken() async => throw _error;
+
+  @override
+  Future<String> getAuthorizationCode() async => throw _error;
 }
 
 class FakeGoogleAuthClient implements GoogleAuthClient {
@@ -49,6 +52,26 @@ void main() {
     test('이름이 오지 않으면(두 번째 로그인부터) null이다', () {
       expect(appleDisplayName(null, null), isNull);
       expect(appleDisplayName(' ', ''), isNull);
+    });
+  });
+
+  group('isAppleUser', () {
+    User user(Map<String, dynamic> appMetadata) => User(
+      id: 'user-1',
+      appMetadata: appMetadata,
+      userMetadata: const {},
+      aud: 'authenticated',
+      createdAt: '2026-10-04T00:00:00Z',
+    );
+
+    test('providers에 apple이 있으면 true', () {
+      expect(isAppleUser(user({'provider': 'github', 'providers': ['github', 'apple']})), isTrue);
+    });
+
+    test('apple이 없거나 로그인하지 않았으면 false', () {
+      expect(isAppleUser(user({'provider': 'kakao', 'providers': ['kakao']})), isFalse);
+      expect(isAppleUser(user(const {})), isFalse);
+      expect(isAppleUser(null), isFalse);
     });
   });
 
