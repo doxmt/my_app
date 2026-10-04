@@ -37,6 +37,8 @@
 	<string>모의면접과 문제풀기 답변을 음성으로 입력하기 위해 마이크를 사용합니다.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>말한 내용을 글자로 바꿔 입력창에 채우기 위해 음성 인식을 사용합니다.</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>
