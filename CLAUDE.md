@@ -53,6 +53,9 @@ flutter analyze             # 정적 분석
 # 웹 (webapp/, Next.js)
 cd webapp && npm run dev    # http://localhost:3000 (webapp/.env.local 필요, 이름은 .env.local.example)
 cd webapp && npm run lint && npx tsc --noEmit && npm test && npm run build
+
+# Edge Functions (supabase/functions/, Deno)
+cd supabase/functions && deno test --allow-env   # --allow-env 없이는 env를 읽는 테스트가 실패한다
 ```
 
 ## Definition of Done
@@ -62,6 +65,7 @@ PR 올리기 전 아래를 모두 통과해야 한다.
 - [ ] `flutter analyze` 통과
 - [ ] `flutter test` 통과
 - [ ] `webapp/` 변경 시: `npm run lint`, `npx tsc --noEmit`, `npm test`, `npm run build` 통과
+- [ ] `supabase/functions/` 변경 시: `deno test --allow-env` 통과
 - [ ] UI 변경 시: 영향받는 플랫폼(Android/iOS/Web)에서 직접 확인
 
 ## 브랜치 전략
