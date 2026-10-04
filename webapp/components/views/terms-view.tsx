@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LegalDocument, LegalSection, Placeholder } from "@/components/legal-document";
+import { LegalDocument, LegalSection } from "@/components/legal-document";
 
 /** 이용약관(초안). */
 export function TermsView() {
@@ -8,7 +8,7 @@ export function TermsView() {
       <LegalSection heading="1. 서비스 내용">
         <p>
           DevInterview(이하 &quot;서비스&quot;)는 개발자 기술면접을 준비하는 서비스로, 분야별 서술형 문제풀이, 오답노트,
-          이력서 기반 AI 모의면접을 제공합니다. 운영자는 개인 개발자 <Placeholder>운영자 이름</Placeholder>입니다. 서비스는
+          이력서 기반 AI 모의면접을 제공합니다. 운영자는 개인 개발자 송태하입니다. 서비스는
           앱(Android·iOS)과 웹으로 제공되며, 기능은 사전 안내 후 바뀌거나 중단될 수 있습니다.
         </p>
       </LegalSection>
@@ -64,7 +64,7 @@ export function TermsView() {
       <LegalSection heading="8. 문의">
         <ul>
           <li>
-            이메일: <Placeholder>문의 이메일</Placeholder>
+            이메일: songtaeha@naver.com
           </li>
         </ul>
       </LegalSection>
