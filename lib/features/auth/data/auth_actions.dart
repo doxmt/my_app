@@ -10,6 +10,12 @@ import '../domain/auth_exception.dart';
 import 'apple_auth_client.dart';
 import 'google_auth_client.dart';
 
+/// Apple로 가입(또는 연결)한 회원인지. 이런 회원은 계정 삭제 때 Apple 토큰 철회가 필요하다.
+bool isAppleUser(User? user) {
+  final providers = user?.appMetadata['providers'];
+  return providers is List && providers.contains('apple');
+}
+
 /// 로그인/로그아웃 동작. Google은 플랫폼별로 분기하고, Kakao·GitHub는 전 플랫폼 `signInWithOAuth`를 쓴다.
 /// Apple은 iOS 앱 네이티브 로그인만 있다.
 class AuthActions {
@@ -108,9 +114,18 @@ class AuthActions {
   }
 
   /// 계정을 즉시 삭제한다. `delete-account` Edge Function이 요청 JWT의 사용자만 지운다.
+  /// Apple 회원은 재인증으로 받은 authorizationCode를 함께 보내 서버가 Apple 토큰을 철회하게 한다.
   Future<void> deleteAccount() async {
+    Map<String, dynamic>? body;
+    if (isAppleUser(_client.auth.currentUser)) {
+      try {
+        body = {'appleAuthorizationCode': await _appleAuthClient.getAuthorizationCode()};
+      } catch (_) {
+        throw const AuthActionException('Apple 인증을 완료하지 못해 계정을 삭제하지 않았습니다.');
+      }
+    }
     try {
-      await _client.functions.invoke('delete-account');
+      await _client.functions.invoke('delete-account', body: body);
     } catch (_) {
       throw const AuthActionException('계정 삭제에 실패했습니다. 다시 시도해주세요.');
     }
