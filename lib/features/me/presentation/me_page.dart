@@ -49,7 +49,7 @@ class MePage extends ConsumerWidget {
           else
             ListTile(
               title: const Text('로그인'),
-              subtitle: const Text('Google 또는 GitHub로 로그인하고 데이터를 백업하세요'),
+              subtitle: const Text('소셜 계정으로 로그인하고 데이터를 백업하세요'),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => context.push('/me/login'),
             ),
