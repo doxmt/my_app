@@ -39,7 +39,7 @@ class CategoriesPage extends ConsumerWidget {
             padding: const EdgeInsets.all(16),
             gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
               maxCrossAxisExtent: 220,
-              mainAxisExtent: 160,
+              mainAxisExtent: 180,
               crossAxisSpacing: 12,
               mainAxisSpacing: 12,
             ),
@@ -54,15 +54,16 @@ class CategoriesPage extends ConsumerWidget {
   }
 }
 
-class _CategoryCard extends StatelessWidget {
+class _CategoryCard extends ConsumerWidget {
   const _CategoryCard({required this.category});
 
   final Category category;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
     final description = category.description;
+    final stats = ref.watch(fieldStatsProvider).value?[category.id];
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -90,6 +91,13 @@ class _CategoryCard extends StatelessWidget {
                   ).textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
+                ),
+              ],
+              if (stats != null) ...[
+                const Spacer(),
+                Text(
+                  '주제 ${stats.topicCount} · 문제 ${stats.questionCount}',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(color: colorScheme.onSurfaceVariant),
                 ),
               ],
             ],
