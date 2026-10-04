@@ -124,6 +124,7 @@ PDF → Vercel 파싱 함수(`/api/parse-pdf`)로 직접 전송 → 추출된 �
 [모의면접 — 회원, M4 이후]
 메시지 전송 (JWT) → user_id 확인 → increment_daily_usage (초과 시 429)
   → DB의 이력서·대화 이력으로 프롬프트 구성 → 스트리밍 응답 → interview_messages 저장
+  → 진행 중(active) 세션을 이어 쓴다. 요청의 history가 비어 있으면 새 면접이므로 이전 세션을 completed로 끝내고 새 세션을 만든다
 
 [회원가입 — M4]
 OAuth 로그인 → 기기의 오답노트·이력서를 DB로 업로드 (자동, 확인 화면 없음)
