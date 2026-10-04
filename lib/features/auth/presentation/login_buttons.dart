@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart' show AppleLogoPainter;
 
 const double _buttonHeight = 44;
 
@@ -89,6 +90,52 @@ class GoogleLoginButton extends StatelessWidget {
                   fontWeight: FontWeight.w500,
                   color: isDark ? const Color(0xFFE3E3E3) : const Color(0xFF1F1F1F),
                 ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Apple HIG: 라이트 배경엔 Black, 다크 배경엔 White 스타일(로고·글자는 배경과 반대색 하나만 사용).
+/// 로고는 패키지가 공개한 [AppleLogoPainter]를 쓰고, 크기는 공식 버튼 이미지 계측값(약 11x14, 높이 44 기준)에 맞춘다.
+/// 다른 로그인 버튼과 같은 배치(로고 왼쪽 정렬, 글자 가운데)로 그린다. iOS 앱에서만 보여준다.
+class AppleLoginButton extends StatelessWidget {
+  const AppleLoginButton({super.key, required this.enabled, required this.onPressed});
+
+  final bool enabled;
+  final VoidCallback onPressed;
+
+  static const label = 'Apple로 로그인';
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final foreground = isDark ? const Color(0xFF000000) : const Color(0xFFFFFFFF);
+    return _LoginButtonFrame(
+      label: label,
+      enabled: enabled,
+      onPressed: onPressed,
+      color: isDark ? const Color(0xFFFFFFFF) : const Color(0xFF000000),
+      radius: 8,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 11.5,
+              height: 14,
+              child: CustomPaint(painter: AppleLogoPainter(color: foreground)),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                label,
+                textAlign: TextAlign.center,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: _labelFontSize, fontWeight: FontWeight.w500, color: foreground),
               ),
             ),
           ],

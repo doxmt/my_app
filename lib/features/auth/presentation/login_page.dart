@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -44,6 +45,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   @override
   Widget build(BuildContext context) {
     final actions = ref.read(authActionsProvider);
+    // Apple 로그인은 iOS 앱에서만 제공한다(가이드라인 4.8). 웹·Android에는 버튼을 두지 않는다.
+    final showApple = !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
     return Scaffold(
       appBar: AppBar(title: const Text('로그인')),
       body: Center(
@@ -67,6 +70,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 ),
                 const LegalLinkButtons(),
                 const SizedBox(height: 16),
+                if (showApple) ...[
+                  AppleLoginButton(enabled: !_isLoading, onPressed: () => _signIn(actions.signInWithApple)),
+                  const SizedBox(height: 12),
+                ],
                 KakaoLoginButton(enabled: !_isLoading, onPressed: () => _signIn(actions.signInWithKakao)),
                 const SizedBox(height: 12),
                 GoogleLoginButton(enabled: !_isLoading, onPressed: () => _signIn(actions.signInWithGoogle)),
