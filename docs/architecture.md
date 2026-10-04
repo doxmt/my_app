@@ -85,7 +85,7 @@ admin/                 Vite+React 어드민 웹앱 (M5-a), 별도 Vercel 프로�
 | `interview_sessions` | 모의면접 세션 (회원, `provider`, `model`, `status`) | 본인만 |
 | `interview_messages` | 대화 메시지 (회원) | 세션 소유자만 (join 정책) |
 | `daily_usage` | 회원 일일 사용량 `PK(user_id, usage_date)` | 본인 읽기만, 쓰기는 RPC |
-| `guest_daily_usage` | 비회원 일일 사용량 `PK(subject_type, subject_key, usage_date)`, `subject_type`은 `device`/`ip`, IP는 해시로 저장 | 클라이언트 접근 없음 (Edge Function만) |
+| `guest_daily_usage` | 비회원 일일 사용량 `PK(subject_type, subject_key, usage_date)`, `subject_type`은 `device`/`ip`, IP는 해시로 저장. 30일 지난 행은 pg_cron(`purge-guest-daily-usage`)이 매일 삭제 | 클라이언트 접근 없음 (Edge Function만) |
 | `rate_limit_config` | 한도 (`guest_device` / `guest_ip` / `free` / `paid`) | 공개 읽기, 대시보드에서만 수정 |
 
 사용량 증가는 SECURITY DEFINER 함수로만 한다.
