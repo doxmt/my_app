@@ -76,8 +76,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 ],
                 KakaoLoginButton(enabled: !_isLoading, onPressed: () => _signIn(actions.signInWithKakao)),
                 const SizedBox(height: 12),
-                GoogleLoginButton(enabled: !_isLoading, onPressed: () => _signIn(actions.signInWithGoogle)),
-                const SizedBox(height: 12),
                 GithubLoginButton(enabled: !_isLoading, onPressed: () => _signIn(actions.signInWithGithub)),
                 if (_isLoading) ...[const SizedBox(height: 16), const Center(child: CircularProgressIndicator())],
                 if (_errorMessage != null) ...[
