@@ -56,3 +56,11 @@ export function buildSystemPrompt(params: {
     truncateResume(params.resumeText),
   ].join('\n');
 }
+
+/**
+ * 새 면접의 첫 메시지인지. 클라이언트는 매 요청에 이전 대화를 함께 보내므로, 이전 대화가 없으면
+ * 사용자가 새 면접을 시작한 것이다. 회원 경로는 이때 이전 진행 중 세션을 끝내고 새 세션을 만든다.
+ */
+export function startsNewInterview(history: unknown): boolean {
+  return !Array.isArray(history) || history.length === 0;
+}

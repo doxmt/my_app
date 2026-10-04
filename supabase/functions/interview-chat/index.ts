@@ -3,7 +3,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 import { createLlmProvider } from './_shared/llm/factory.ts';
 import type { ChatMessage } from './_shared/llm/types.ts';
 import { resolveMemberUser } from './_shared/member_auth.ts';
-import { buildSystemPrompt, truncateHistory, type HistoryMessage } from './_shared/prompt.ts';
+import { buildSystemPrompt, startsNewInterview, truncateHistory, type HistoryMessage } from './_shared/prompt.ts';
 import {
   extractClientIp,
   fetchMemberLimit,
@@ -287,6 +287,7 @@ async function handleChat(req: Request): Promise<Response> {
 /**
  * 회원 경로. 클라이언트가 보낸 resumeText/history는 신뢰하지 않고 DB 기준(이력서·대화 이력)으로
  * 프롬프트를 구성한다. 진행 중인(status='active') 세션이 있으면 이어서 쓰고, 없으면 새로 만든다.
+ * 클라이언트의 history가 비어 있으면 새 면접이므로 진행 중 세션을 completed로 끝내고 새로 만든다.
  * 사용자 메시지와 모델 응답을 모두 `interview_messages`에 저장한다.
  */
 async function handleMemberChat(
@@ -342,6 +343,18 @@ async function handleMemberChat(
   }
 
   let sessionId = (activeSessionRows as { id: string }[] | null)?.[0]?.id;
+  if (sessionId && startsNewInterview(body.history)) {
+    // 사용자가 새 면접을 시작했다. 이전 세션을 끝내지 않으면 예전 대화가 새 면접 프롬프트에 섞인다.
+    const { error: completeError } = await client
+      .from('interview_sessions')
+      .update({ status: 'completed', ended_at: new Date().toISOString() })
+      .eq('user_id', userId)
+      .eq('status', 'active');
+    if (completeError) {
+      return jsonResponse(500, { code: 'SESSION_COMPLETE_FAILED', message: '면접 세션을 시작하지 못했습니다.' });
+    }
+    sessionId = undefined;
+  }
   if (!sessionId) {
     const { data: created, error: createError } = await client
       .from('interview_sessions')
