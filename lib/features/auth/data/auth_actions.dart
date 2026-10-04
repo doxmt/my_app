@@ -2,23 +2,30 @@
 // (공개 생성자 파라미터 이름을 private 필드 이름과 다르게 유지하기 위해 의도적으로 사용하지 않는다.)
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_sign_in/google_sign_in.dart' show GoogleSignInException, GoogleSignInExceptionCode;
+import 'package:sign_in_with_apple/sign_in_with_apple.dart'
+    show AuthorizationErrorCode, SignInWithAppleAuthorizationException;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../domain/auth_exception.dart';
+import 'apple_auth_client.dart';
 import 'google_auth_client.dart';
 
 /// 로그인/로그아웃 동작. Google은 플랫폼별로 분기하고, Kakao·GitHub는 전 플랫폼 `signInWithOAuth`를 쓴다.
+/// Apple은 iOS 앱 네이티브 로그인만 있다.
 class AuthActions {
   AuthActions({
     required SupabaseClient client,
     required GoogleAuthClient googleAuthClient,
+    required AppleAuthClient appleAuthClient,
     required String authRedirectUrl,
   }) : _client = client,
        _googleAuthClient = googleAuthClient,
+       _appleAuthClient = appleAuthClient,
        _authRedirectUrl = authRedirectUrl;
 
   final SupabaseClient _client;
   final GoogleAuthClient _googleAuthClient;
+  final AppleAuthClient _appleAuthClient;
   final String _authRedirectUrl;
 
   Future<void> signInWithGoogle() async {
@@ -38,6 +45,33 @@ class AuthActions {
       rethrow;
     } catch (_) {
       throw const AuthActionException('Google 로그인에 실패했습니다. 다시 시도해주세요.');
+    }
+  }
+
+  Future<void> signInWithApple() async {
+    try {
+      final credential = await _appleAuthClient.signInAndGetIdToken();
+      await _client.auth.signInWithIdToken(
+        provider: OAuthProvider.apple,
+        idToken: credential.idToken,
+        nonce: credential.rawNonce,
+      );
+      // Apple은 이름을 최초 로그인에서만 주고 ID 토큰에는 넣지 않는다. 받았을 때 바로 저장한다.
+      final fullName = credential.fullName;
+      if (fullName != null) {
+        try {
+          await _client.auth.updateUser(UserAttributes(data: {'full_name': fullName}));
+        } catch (_) {}
+      }
+    } on SignInWithAppleAuthorizationException catch (error) {
+      if (error.code == AuthorizationErrorCode.canceled) {
+        return;
+      }
+      throw const AuthActionException('Apple 로그인에 실패했습니다. 다시 시도해주세요.');
+    } on AuthActionException {
+      rethrow;
+    } catch (_) {
+      throw const AuthActionException('Apple 로그인에 실패했습니다. 다시 시도해주세요.');
     }
   }
 

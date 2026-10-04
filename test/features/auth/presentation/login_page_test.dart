@@ -1,6 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:my_app/features/auth/data/apple_auth_client.dart';
 import 'package:my_app/features/auth/data/auth_actions.dart';
 import 'package:my_app/features/auth/data/google_auth_client.dart';
 import 'package:my_app/features/auth/presentation/auth_providers.dart';
@@ -24,6 +26,7 @@ Widget _app({ThemeMode mode = ThemeMode.light}) {
             authOptions: const AuthClientOptions(autoRefreshToken: false),
           ),
           googleAuthClient: FakeGoogleAuthClient(),
+          appleAuthClient: AppleAuthClient(),
           authRedirectUrl: 'app://login-callback',
         ),
       ),
@@ -52,6 +55,27 @@ void main() {
     final ys = [for (final l in labels) tester.getTopLeft(find.text(l)).dy];
     expect(ys[0] < ys[1] && ys[1] < ys[2], isTrue);
     expect(find.text('Apple로 로그인'), findsNothing);
+  });
+
+  testWidgets('iOS 앱에서는 Apple 버튼이 맨 위에 높이 44로 표시된다', (tester) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+    await tester.pumpWidget(_app());
+
+    expect(find.text('Apple로 로그인'), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.byType(AppleLoginButton)).dy < tester.getTopLeft(find.byType(KakaoLoginButton)).dy,
+      isTrue,
+    );
+    expect(tester.getSize(find.byType(AppleLoginButton)).height, 44);
+    debugDefaultTargetPlatformOverride = null;
+  });
+
+  testWidgets('Android에서는 Apple 버튼이 없다', (tester) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.android;
+    await tester.pumpWidget(_app());
+
+    expect(find.text('Apple로 로그인'), findsNothing);
+    debugDefaultTargetPlatformOverride = null;
   });
 
   testWidgets('3개 버튼의 높이가 모두 44다', (tester) async {
