@@ -2,6 +2,7 @@
 
 import { ChevronRight, FileText, LogIn, NotebookPen, type LucideIcon } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { MeLayout } from "@/components/me-layout";
 import { ThemeSetting } from "@/components/theme-setting";
@@ -37,12 +38,34 @@ function MenuLink({
 /** 내 정보. 계정 상태와 이력서·오답노트 바로가기. */
 export function MeView() {
   const { userId, displayName, email } = useAccount();
+  const router = useRouter();
   const [signOutError, setSignOutError] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState(false);
 
   async function signOut() {
     setSignOutError(false);
     const { error } = await getBrowserClient().auth.signOut();
     if (error) setSignOutError(true);
+  }
+
+  async function deleteAccount() {
+    const confirmed = window.confirm(
+      "계정과 계정에 저장된 오답노트·이력서·면접 기록이 바로 삭제되며 되돌릴 수 없습니다. 삭제할까요?",
+    );
+    if (!confirmed) return;
+    setDeleteError(false);
+    setDeleting(true);
+    const supabase = getBrowserClient();
+    const { error } = await supabase.functions.invoke("delete-account");
+    if (error) {
+      setDeleteError(true);
+      setDeleting(false);
+      return;
+    }
+    // 서버 계정은 이미 없으므로 브라우저에 남은 세션만 지운다.
+    await supabase.auth.signOut({ scope: "local" });
+    router.push("/");
   }
 
   return (
@@ -87,6 +110,18 @@ export function MeView() {
             <p role="alert" className="mt-3 text-sm text-destructive">
               로그아웃에 실패했습니다. 다시 시도해주세요.
             </p>
+          )}
+          {userId && (
+            <div className="mt-4 border-t pt-4">
+              <Button variant="ghost" size="sm" className="text-destructive" onClick={deleteAccount} disabled={deleting}>
+                {deleting ? "삭제 중…" : "계정 삭제"}
+              </Button>
+              {deleteError && (
+                <p role="alert" className="mt-2 text-sm text-destructive">
+                  계정 삭제에 실패했습니다. 다시 시도해주세요.
+                </p>
+              )}
+            </div>
           )}
         </section>
 
