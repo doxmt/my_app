@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Shuffle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { DifficultyBadge } from "@/components/difficulty-badge";
@@ -11,8 +11,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { useUserId } from "@/components/user-id-provider";
 import { cn } from "@/lib/utils";
 import { getWrongNoteRepository } from "@/lib/data/repositories";
-import { fetchCategoryBySlug, fetchQuestionsByCategory } from "@/lib/data/supabase-data";
+import { fetchCategoryBySlug, fetchChildCategories, fetchQuestionsByCategory } from "@/lib/data/supabase-data";
 import type { PracticeMode, Question } from "@/lib/models";
+import { type RandomScope, pickRandomEntry, randomEntriesOfTopic } from "@/lib/random-pick";
 import { getBrowserClient } from "@/lib/supabase/client";
 import { useAsync } from "@/lib/use-async";
 
@@ -25,13 +26,18 @@ export function QuestionDetailView({
   mode,
   topicSlug,
   questionId,
+  randomScope = null,
 }: {
   fieldSlug: string;
   mode: PracticeMode;
   topicSlug: string;
   questionId: string;
+  /** 랜덤으로 진입했을 때의 범위(`?random=field|topic`). 학습하기에서만 "다음 랜덤 문제"에 쓴다. */
+  randomScope?: RandomScope | null;
 }) {
   const router = useRouter();
+  const [pickingRandom, setPickingRandom] = useState(false);
+  const [randomNotice, setRandomNotice] = useState<string | null>(null);
   const { data, error, loading, reload } = useAsync(`questions:${topicSlug}`, async () => {
     const client = getBrowserClient();
     const topic = await fetchCategoryBySlug(client, topicSlug);
@@ -70,6 +76,36 @@ export function QuestionDetailView({
   const goTo = (id: string) => router.replace(`/categories/${fieldSlug}/${mode}/${topicSlug}/${id}`);
 
   const modeLabel = mode === "study" ? "학습하기" : "문제풀기";
+  // 주제 범위는 이 주제에 다른 문제가 있을 때만, 분야 범위는 누를 때 풀을 불러와 확인한다.
+  const showNextRandom =
+    mode === "study" && randomScope !== null && (randomScope === "field" || data.questions.length > 1);
+
+  // 현재 문제를 뺀 범위 안에서 무작위로 골라 replace로 이동한다(뒤로 가기 기록이 쌓이지 않는다). 범위 쿼리는 유지한다.
+  async function goToNextRandom() {
+    if (pickingRandom || !randomScope || !data) return;
+    setPickingRandom(true);
+    setRandomNotice(null);
+    try {
+      let pool = randomEntriesOfTopic(topicSlug, data.questions);
+      if (randomScope === "field") {
+        const client = getBrowserClient();
+        const fieldCategory = await fetchCategoryBySlug(client, fieldSlug);
+        const topics = await fetchChildCategories(client, fieldCategory.id);
+        const results = await Promise.all(topics.map((topic) => fetchQuestionsByCategory(client, topic.id)));
+        pool = topics.flatMap((topic, i) => randomEntriesOfTopic(topic.slug, results[i]));
+      }
+      const pick = pickRandomEntry(pool, Math.random, questionId);
+      if (!pick) {
+        setRandomNotice("다른 문제가 없습니다.");
+        return;
+      }
+      router.replace(`/categories/${fieldSlug}/${mode}/${pick.topicSlug}/${pick.questionId}?random=${randomScope}`);
+    } catch {
+      setRandomNotice("문제를 불러오지 못했습니다.");
+    } finally {
+      setPickingRandom(false);
+    }
+  }
 
   return (
     <Page>
@@ -144,6 +180,19 @@ export function QuestionDetailView({
           <ChevronRight aria-hidden />
         </Button>
       </nav>
+      {showNextRandom && (
+        <div className="mt-4 flex flex-col items-center gap-2">
+          <Button size="lg" className="w-full sm:w-auto" disabled={pickingRandom} onClick={goToNextRandom}>
+            <Shuffle aria-hidden />
+            다음 랜덤 문제
+          </Button>
+          {randomNotice && (
+            <p role="status" className="text-sm text-muted-foreground">
+              {randomNotice}
+            </p>
+          )}
+        </div>
+      )}
     </Page>
   );
 }

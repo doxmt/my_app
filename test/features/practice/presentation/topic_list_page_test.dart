@@ -94,6 +94,14 @@ Widget _appWith(
         builder: (context, state) => const Scaffold(body: Text('TOPIC_PAGE')),
       ),
       GoRoute(
+        path: '/categories/cs/study/:topic/:questionId',
+        builder: (context, state) {
+          final topic = state.pathParameters['topic'];
+          final questionId = state.pathParameters['questionId'];
+          return Scaffold(body: Text('STUDY:$topic:$questionId:${state.uri.queryParameters['random']}'));
+        },
+      ),
+      GoRoute(
         path: '/categories/cs/practice/:topic/:questionId',
         builder: (context, state) {
           final topic = state.pathParameters['topic'];
@@ -165,11 +173,35 @@ void main() {
     expect(find.text('QUESTION:cs-data-structures:q1'), findsOneWidget);
   });
 
-  testWidgets('학습하기 모드에서는 전체 랜덤 카드가 보이지 않는다', (tester) async {
+  testWidgets('학습하기 모드에서도 전체 랜덤 카드가 보인다', (tester) async {
     await tester.pumpWidget(_appWith(const _FakeCategoryRepository([_cs, _dataStructures])));
     await tester.pumpAndSettle();
 
-    expect(find.text('전체 랜덤'), findsNothing);
+    expect(find.text('전체 랜덤'), findsOneWidget);
+  });
+
+  testWidgets('학습하기 전체 랜덤 카드는 random=field 쿼리와 함께 학습하기 상세로 이동한다', (tester) async {
+    const question = Question(
+      id: 'q1',
+      categoryId: 't2',
+      type: 'descriptive',
+      prompt: '프로세스와 스레드의 차이를 설명하라.',
+      modelAnswer: null,
+      difficulty: 'easy',
+      tags: [],
+    );
+    await tester.pumpWidget(
+      _appWith(
+        const _FakeCategoryRepository([_cs, _dataStructures, _os]),
+        questionRepository: const _FakeQuestionRepository([question]),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('전체 랜덤'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('STUDY:cs-os:q1:field'), findsOneWidget);
   });
 
   testWidgets('주제가 없으면 빈 상태 문구를 보여준다', (tester) async {

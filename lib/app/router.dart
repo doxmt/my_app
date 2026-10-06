@@ -7,6 +7,7 @@ import '../features/interview/presentation/interview_page.dart';
 import '../features/me/presentation/me_page.dart';
 import '../features/me/presentation/settings_page.dart';
 import '../features/practice/domain/practice_mode.dart';
+import '../features/practice/domain/random_pick.dart';
 import '../features/practice/presentation/field_page.dart';
 import '../features/practice/presentation/question_detail_page.dart';
 import '../features/practice/presentation/question_list_page.dart';
@@ -85,6 +86,9 @@ final routerProvider = Provider<GoRouter>((ref) {
                                     mode: mode,
                                     topicSlug: topic,
                                     questionId: questionId,
+                                    randomScope: RandomScope.fromQueryValue(
+                                      state.uri.queryParameters['random'],
+                                    ),
                                   );
                                 },
                               ),

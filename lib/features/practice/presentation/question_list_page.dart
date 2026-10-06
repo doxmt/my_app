@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../categories/presentation/categories_providers.dart';
 import '../domain/practice_mode.dart';
+import '../domain/random_pick.dart';
 import 'practice_providers.dart';
 
 /// 난이도 값(`questions.difficulty`)과 화면 표시 이름. 웹의 난이도 배지와 같은 이름을 쓴다.
@@ -119,6 +120,24 @@ class _QuestionListPageState extends ConsumerState<QuestionListPage> {
                             ),
                           ),
                       ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: OutlinedButton.icon(
+                        onPressed: visible.isEmpty
+                            ? null
+                            : () {
+                                final pick = visible[Random().nextInt(visible.length)];
+                                context.push(
+                                  '/categories/${widget.fieldSlug}/${widget.mode.pathValue}/${widget.topicSlug}/${pick.id}?random=${RandomScope.topic.queryValue}',
+                                );
+                              },
+                        icon: const Icon(Icons.shuffle),
+                        label: const Text('랜덤 문제'),
+                      ),
                     ),
                   ),
                   Expanded(

@@ -7,10 +7,11 @@ import 'package:go_router/go_router.dart';
 import '../../categories/domain/category.dart';
 import '../../categories/presentation/categories_providers.dart';
 import '../domain/practice_mode.dart';
+import '../domain/random_pick.dart';
 import 'practice_providers.dart';
 
 /// 주제 목록 화면. 분야의 하위 주제를 보여준다.
-/// 문제풀기에서는 맨 앞에 "전체 랜덤" 카드를 추가로 보여준다. 이 카드를 누르면
+/// 맨 앞에 "전체 랜덤" 카드를 추가로 보여준다(학습하기·문제풀기 공통). 이 카드를 누르면
 /// 분야의 모든 주제를 합쳐 문제 하나를 무작위로 골라 바로 상세 화면으로 이동한다.
 class TopicListPage extends ConsumerStatefulWidget {
   const TopicListPage({super.key, required this.fieldSlug, required this.mode});
@@ -32,22 +33,22 @@ class _TopicListPageState extends ConsumerState<TopicListPage> {
       final results = await Future.wait(
         topics.map((topic) => ref.read(questionsByCategoryProvider(topic.id).future)),
       );
-      final pool = <(String topicSlug, String questionId)>[];
-      for (var i = 0; i < topics.length; i++) {
-        for (final question in results[i]) {
-          pool.add((topics[i].slug, question.id));
-        }
-      }
+      final pool = <RandomEntry>[
+        for (var i = 0; i < topics.length; i++) ...randomEntriesOfTopic(topics[i].slug, results[i]),
+      ];
       if (!mounted) return;
-      if (pool.isEmpty) {
+      final pick = pickRandomEntry(pool, Random());
+      if (pick == null) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text('아직 문제가 없습니다.')));
         return;
       }
-      final pick = pool[Random().nextInt(pool.length)];
-      if (!mounted) return;
-      context.push('/categories/${widget.fieldSlug}/${widget.mode.pathValue}/${pick.$1}/${pick.$2}');
+      // 학습하기에서는 상세의 "다음 랜덤 문제"가 분야 전체 풀을 쓰도록 범위를 쿼리로 넘긴다.
+      final query = widget.mode == PracticeMode.study ? '?random=${RandomScope.field.queryValue}' : '';
+      context.push(
+        '/categories/${widget.fieldSlug}/${widget.mode.pathValue}/${pick.topicSlug}/${pick.questionId}$query',
+      );
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(
@@ -103,8 +104,7 @@ class _TopicListPageState extends ConsumerState<TopicListPage> {
               if (topics.isEmpty) {
                 return const Center(child: Text('아직 등록된 주제가 없습니다.'));
               }
-              final showGlobalRandom = mode == PracticeMode.practice;
-              final itemCount = topics.length + (showGlobalRandom ? 1 : 0);
+              final itemCount = topics.length + 1;
               return GridView.builder(
                 padding: const EdgeInsets.all(16),
                 gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
@@ -115,7 +115,7 @@ class _TopicListPageState extends ConsumerState<TopicListPage> {
                 ),
                 itemCount: itemCount,
                 itemBuilder: (context, index) {
-                  if (showGlobalRandom && index == 0) {
+                  if (index == 0) {
                     return _TopicCard(
                       label: '전체 랜덤',
                       icon: Icons.shuffle,
@@ -123,7 +123,7 @@ class _TopicListPageState extends ConsumerState<TopicListPage> {
                       onTap: () => _pickGlobalRandom(topics),
                     );
                   }
-                  final topic = topics[showGlobalRandom ? index - 1 : index];
+                  final topic = topics[index - 1];
                   return _TopicCard(
                     label: topic.name,
                     onTap: () {

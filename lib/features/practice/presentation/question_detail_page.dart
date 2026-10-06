@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -8,6 +10,7 @@ import '../../wrong_notes/domain/wrong_note.dart';
 import '../../wrong_notes/presentation/wrong_notes_providers.dart';
 import '../domain/practice_mode.dart';
 import '../domain/question.dart';
+import '../domain/random_pick.dart';
 import 'practice_providers.dart';
 
 /// 문제 상세 화면. 학습하기는 모범답안을 바로 보여주고,
@@ -19,12 +22,16 @@ class QuestionDetailPage extends ConsumerStatefulWidget {
     required this.mode,
     required this.topicSlug,
     required this.questionId,
+    this.randomScope,
   });
 
   final String fieldSlug;
   final PracticeMode mode;
   final String topicSlug;
   final String questionId;
+
+  /// 랜덤으로 진입했을 때의 범위(`?random=field|topic`). 학습하기에서만 "다음 랜덤 문제"에 쓴다.
+  final RandomScope? randomScope;
 
   @override
   ConsumerState<QuestionDetailPage> createState() => _QuestionDetailPageState();
@@ -36,6 +43,7 @@ class _QuestionDetailPageState extends ConsumerState<QuestionDetailPage> {
   bool _revealed = false;
   bool? _isCorrect;
   bool _saved = false;
+  bool _pickingRandom = false;
 
   @override
   void dispose() {
@@ -48,6 +56,42 @@ class _QuestionDetailPageState extends ConsumerState<QuestionDetailPage> {
     context.pushReplacement(
       '/categories/${widget.fieldSlug}/${widget.mode.pathValue}/${widget.topicSlug}/$questionId',
     );
+  }
+
+  /// "다음 랜덤 문제". 범위(분야 전체/현재 주제)에서 현재 문제를 뺀 문제 하나로 이동한다.
+  /// 뒤로 가기 스택이 쌓이지 않도록 replace로 이동하고, 범위 쿼리는 그대로 유지한다.
+  Future<void> _goToNextRandom(List<Question> topicQuestions) async {
+    if (_pickingRandom) return;
+    final scope = widget.randomScope!;
+    setState(() => _pickingRandom = true);
+    try {
+      final List<RandomEntry> pool;
+      if (scope == RandomScope.topic) {
+        pool = randomEntriesOfTopic(widget.topicSlug, topicQuestions);
+      } else {
+        final field = await ref.read(categoryBySlugProvider(widget.fieldSlug).future);
+        final topics = await ref.read(childCategoriesProvider(field.id).future);
+        final results = await Future.wait(
+          topics.map((topic) => ref.read(questionsByCategoryProvider(topic.id).future)),
+        );
+        pool = [for (var i = 0; i < topics.length; i++) ...randomEntriesOfTopic(topics[i].slug, results[i])];
+      }
+      if (!mounted) return;
+      final pick = pickRandomEntry(pool, Random(), excludeQuestionId: widget.questionId);
+      if (pick == null) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('다른 문제가 없습니다.')));
+        return;
+      }
+      context.pushReplacement(
+        '/categories/${widget.fieldSlug}/${widget.mode.pathValue}/${pick.topicSlug}/${pick.questionId}?random=${scope.queryValue}',
+      );
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('문제를 불러오지 못했습니다.')));
+      }
+    } finally {
+      if (mounted) setState(() => _pickingRandom = false);
+    }
   }
 
   Future<void> _saveToWrongNotes(Question question, String categoryId) async {
@@ -109,6 +153,12 @@ class _QuestionDetailPageState extends ConsumerState<QuestionDetailPage> {
               final question = questions[index];
               final previousId = index > 0 ? questions[index - 1].id : null;
               final nextId = index < questions.length - 1 ? questions[index + 1].id : null;
+              // 주제 범위는 이 주제에 다른 문제가 있을 때만, 분야 범위는 누를 때 풀을 불러와 확인한다.
+              final randomScope = widget.randomScope;
+              final showNextRandom =
+                  widget.mode == PracticeMode.study &&
+                  randomScope != null &&
+                  (randomScope == RandomScope.field || questions.length > 1);
 
               return SingleChildScrollView(
                 padding: const EdgeInsets.all(16),
@@ -145,6 +195,17 @@ class _QuestionDetailPageState extends ConsumerState<QuestionDetailPage> {
                         ),
                       ],
                     ),
+                    if (showNextRandom) ...[
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton.icon(
+                          onPressed: _pickingRandom ? null : () => _goToNextRandom(questions),
+                          icon: const Icon(Icons.shuffle),
+                          label: const Text('다음 랜덤 문제'),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               );
