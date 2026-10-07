@@ -1,13 +1,15 @@
 "use client";
 
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Shuffle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { DifficultyBadge } from "@/components/difficulty-badge";
+import { Button } from "@/components/ui/button";
 import { EmptyState, ErrorState, LoadingState, Page, PageHeader, StatBar } from "@/components/page-state";
 import { fetchCategoryBySlug, fetchQuestionsByCategory } from "@/lib/data/supabase-data";
 import type { PracticeMode } from "@/lib/models";
+import { pickRandomEntry, randomEntriesOfTopic } from "@/lib/random-pick";
 import { getBrowserClient } from "@/lib/supabase/client";
 import { useAsync } from "@/lib/use-async";
 
@@ -67,6 +69,11 @@ export function QuestionListView({
   const modeLabel = mode === "study" ? "학습하기" : "문제풀기";
   const count = (value: string) => data.questions.filter((q) => q.difficulty === value).length;
   const visible = difficulty ? data.questions.filter((q) => q.difficulty === difficulty) : data.questions;
+  // 현재 보이는 목록 안에서 무작위로 고른다. 상세의 "다음 랜덤 문제"는 이 주제 풀을 쓴다(random=topic).
+  const goRandom = () => {
+    const pick = pickRandomEntry(randomEntriesOfTopic(topicSlug, visible));
+    if (pick) router.push(`/categories/${fieldSlug}/${mode}/${topicSlug}/${pick.questionId}?random=topic`);
+  };
 
   return (
     <Page>
@@ -110,6 +117,12 @@ export function QuestionListView({
                 {filter.label}
               </button>
             ))}
+          </div>
+          <div className="mb-3 flex justify-end">
+            <Button variant="outline" disabled={visible.length === 0} onClick={goRandom}>
+              <Shuffle aria-hidden />
+              랜덤 문제
+            </Button>
           </div>
           <div className="overflow-hidden rounded-xl border bg-card">
             <div

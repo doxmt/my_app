@@ -194,3 +194,15 @@
 - 마이그레이션: `supabase/migrations/20260930090000_resumes_self_introduction.sql`, `20260920110000_seed_backend_ai_content.sql`(자리표시), `20261001000000_reclassify_llm_rag_under_ml.sql`
 - 웹: `webapp/components/practice-demo.tsx`, `webapp/app/layout.tsx`·`icon.png`·`apple-icon.png`·`favicon.ico`, `assets/brand/`
 - 문서: `docs/adr.md`(ADR-022·023), `docs/architecture.md`, `docs/prd.md`, `docs/overview.md`, `docs/roadmap.md`
+
+## 2026-10-06
+- `/plan 앱 출시 준비하자`: 인터뷰로 범위 확정 — **iOS 우선 출시 + 웹 컷오버**, Apple 로그인 iOS 앱 전용 재도입, 계정 삭제는 앱·웹 즉시 삭제, 방침·약관은 자료조사 후 초안을 사용자 검토, 구글 로그인은 첫 출시 제외, 품질 우선·일정 유동. planner 초안 → explore(코드 사실)·document-specialist(개인정보보호법 제28조의8·제30조, App Store 4.8·5.1.1(v)·5.1.2(i), Apple 토큰 철회, Supabase Apple provider, 제출 요건, OpenAI·Supabase·Vercel 처리 국가, speech_to_text) 조사를 반영해 `docs/plans/ios-release-cutover.md`와 `open-questions.md` 생성
+- 사용자에게 설명한 것: 컷오버의 의미(운영 Flutter 웹 → Next 웹 교체), 이력서가 OpenAI로 전송되는 이유와 국외 이전 고지 필요성
+- `/start`로 이슈 #37(방침·약관 페이지, 설정 화면, 동의 화면) 구현 지시. 설정은 내 정보 탭 상단 톱니바퀴 → `/me/settings`(사용자 제안). Supabase 리전을 `get_project`로 확인(`ap-northeast-1`). executor 결과를 직접 재검증(flutter analyze/test, webapp lint/tsc/test/build 통과). 이 PR은 이후 #38로 10/4 머지됨(이 세션에서 제출하지 않았음 — 다른 세션이 진행)
+- 사용자 요청으로 **학습하기 랜덤 학습** 추가(이슈 #62, 앱·웹 모두, 별도 브랜치). 범위: 학습하기 주제 목록 "전체 랜덤" 카드 + 문제 목록 "랜덤 문제" 버튼 + 상세 "다음 랜덤 문제" 버튼. executor를 격리 worktree에서 실행, 직접 재검증(flutter test 179, webapp test 99, build 통과). 화면 확인은 못 함. 아직 커밋·PR 전
+- **실수 기록**: ① 로컬 문서를 근거로 "#37은 검토·`/submit` 대기 중"이라고 안내했으나 실제로는 이미 #38로 머지돼 있었다(`git fetch`로 원격 확인 안 함) ② explore 결과의 근거 없는 서술을 걸러내 재확인했으나 처음 보고에서 일부를 그대로 요약했다 ③ worktree가 main 기준으로 생성된 것을 executor가 발견해 develop으로 옮김
+
+### 주요 변경 파일
+- `docs/plans/ios-release-cutover.md`, `docs/plans/open-questions.md`(계획 단계)
+- #62: `lib/features/practice/domain/random_pick.dart`, `lib/features/practice/presentation/{topic_list_page,question_list_page,question_detail_page}.dart`, `lib/app/router.dart`, `webapp/lib/random-pick.ts`, `webapp/components/views/{topic-list-view,question-list-view,question-detail-view}.tsx`, `webapp/app/categories/[field]/[mode]/[topic]/[questionId]/page.tsx`, 관련 테스트
+- `docs/work_log.md`, `docs/current_state.md`

@@ -7,11 +7,12 @@ import { useState } from "react";
 import { EmptyState, ErrorState, LoadingState, Page, PageHeader, StatBar } from "@/components/page-state";
 import { fetchCategoryBySlug, fetchChildCategories, fetchQuestionsByCategory } from "@/lib/data/supabase-data";
 import type { Category, PracticeMode } from "@/lib/models";
+import { pickRandomEntry, randomEntriesOfTopic } from "@/lib/random-pick";
 import { getBrowserClient } from "@/lib/supabase/client";
 import { useAsync } from "@/lib/use-async";
 
 /**
- * 주제 목록. 문제풀기에서는 맨 앞에 "전체 랜덤" 카드를 추가로 보여준다.
+ * 주제 목록. 맨 앞에 "전체 랜덤" 카드를 추가로 보여준다(학습하기·문제풀기 공통).
  * 이 카드를 누르면 분야의 모든 주제 문제를 합쳐 하나를 무작위로 골라 상세 화면으로 이동한다.
  */
 export function TopicListView({ fieldSlug, mode }: { fieldSlug: string; mode: PracticeMode }) {
@@ -32,18 +33,15 @@ export function TopicListView({ fieldSlug, mode }: { fieldSlug: string; mode: Pr
     try {
       const client = getBrowserClient();
       const results = await Promise.all(topics.map((topic) => fetchQuestionsByCategory(client, topic.id)));
-      const pool = topics.flatMap((topic, index) =>
-        results[index].map((question) => ({
-          topicSlug: topic.slug,
-          questionId: question.id,
-        })),
-      );
-      if (pool.length === 0) {
+      const pool = topics.flatMap((topic, index) => randomEntriesOfTopic(topic.slug, results[index]));
+      const pick = pickRandomEntry(pool);
+      if (!pick) {
         setNotice("아직 문제가 없습니다.");
         return;
       }
-      const pick = pool[Math.floor(Math.random() * pool.length)];
-      router.push(`/categories/${fieldSlug}/${mode}/${pick.topicSlug}/${pick.questionId}`);
+      // 학습하기에서는 상세의 "다음 랜덤 문제"가 분야 전체 풀을 쓰도록 범위를 쿼리로 넘긴다.
+      const query = mode === "study" ? "?random=field" : "";
+      router.push(`/categories/${fieldSlug}/${mode}/${pick.topicSlug}/${pick.questionId}${query}`);
     } catch {
       setNotice("문제를 불러오지 못했습니다.");
     } finally {
@@ -67,7 +65,7 @@ export function TopicListView({ fieldSlug, mode }: { fieldSlug: string; mode: Pr
         title={`${data?.field.name ?? ""} ${modeLabel}`.trim()}
         description={
           mode === "study"
-            ? "주제를 선택해 문제와 모범답안을 읽어보세요."
+            ? "주제를 선택하거나 전체 랜덤으로 문제와 모범답안을 읽어보세요."
             : "주제를 선택하거나 전체 랜덤으로 문제를 풀어보세요."
         }
       />
@@ -86,22 +84,20 @@ export function TopicListView({ fieldSlug, mode }: { fieldSlug: string; mode: Pr
             ]}
           />
           <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {mode === "practice" && (
-              <li>
-                <button
-                  type="button"
-                  disabled={picking}
-                  onClick={() => pickGlobalRandom(data.topics)}
-                  className="interactive-surface flex h-full min-h-28 w-full flex-col items-start justify-between gap-3 rounded-xl border-2 border-dashed border-primary/50 bg-accent/40 p-5 text-left disabled:opacity-60"
-                >
-                  <Shuffle className="size-6 text-primary" aria-hidden />
-                  <span>
-                    <span className="block font-semibold">{picking ? "고르는 중..." : "전체 랜덤"}</span>
-                    <span className="block text-sm text-muted-foreground">모든 주제에서 무작위 1문제</span>
-                  </span>
-                </button>
-              </li>
-            )}
+            <li>
+              <button
+                type="button"
+                disabled={picking}
+                onClick={() => pickGlobalRandom(data.topics)}
+                className="interactive-surface flex h-full min-h-28 w-full flex-col items-start justify-between gap-3 rounded-xl border-2 border-dashed border-primary/50 bg-accent/40 p-5 text-left disabled:opacity-60"
+              >
+                <Shuffle className="size-6 text-primary" aria-hidden />
+                <span>
+                  <span className="block font-semibold">{picking ? "고르는 중..." : "전체 랜덤"}</span>
+                  <span className="block text-sm text-muted-foreground">모든 주제에서 무작위 1문제</span>
+                </span>
+              </button>
+            </li>
             {data.topics.map((topic) => (
               <li key={topic.id}>
                 <Link
