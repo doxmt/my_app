@@ -225,3 +225,19 @@
 - lib/features/auth/(apple_auth_client.dart, auth_actions.dart, login_buttons.dart, login_page.dart), lib/features/me/presentation/settings_page.dart, lib/core/(consent, legal)
 - webapp/components/views/(privacy-view.tsx, terms-view.tsx, me-view.tsx, home-view.tsx, question-list-view.tsx), webapp/app/(privacy, terms, not-found.tsx, error.tsx)
 - ios/Runner/(PrivacyInfo.xcprivacy, Info.plist, Runner.entitlements, Assets.xcassets), .github/workflows/ci.yml, docs/(adr.md, architecture.md, roadmap.md, prd.md, plans/app-store-listing.md)
+
+## 2026-10-08 (오후: 컷오버·iOS 심사 제출)
+(앞선 2026-10-08 기록 이후의 작업. 사용자가 "너가 다 해줘"로 위임하고 직접 콘솔·실기기 확인을 했다)
+- Apple 쪽 마무리: 사용자가 App ID의 Sign in with Apple과 키를 만들고, `.p8`을 secrets에 등록(`APPLE_KEY_ID`·`APPLE_PRIVATE_KEY`). iPhone 개발자 모드를 켜고 실기기에 개발용 빌드 설치. 카카오·Apple 로그인과 회원탈퇴를 실기기에서 확인. 서버에서도 카카오·Apple 계정이 지워지는 것을 직접 조회로 확인(Apple 계정 삭제는 철회가 성공해야 일어나는 구조)
+- 카카오 로그인이 Safari `localhost`로 빠지던 원인: `env/dev.json`에 `AUTH_REDIRECT_URL`이 없었다. 로그인 후 인앱 브라우저 창이 안 닫히는 문제는 `closeInAppWebView()`를 로그인 이벤트 처리가 아니라 앱 최상단(`main.dart`)에서 부르도록 옮겨 해결(이벤트 처리 쪽에 두었을 때는 효과가 없었고 원인은 끝내 확인하지 못했다)
+- 앱·웹 UI 변경(PR #66): 구글 로그인 복원, 로그인 성공 알림(가운데 정렬, 3초), 로그아웃 확인 팝업, 내 정보에 회원탈퇴 추가·이름 통일, 확인 팝업 디자인 개선, 이메일 미표시, 랜덤 학습에서 이전/다음 숨김, 웹 푸터·앱 로그인 화면 정리, 웹 방침·약관의 "삭제 기능은 후속 제공" 옛 문구 수정
+- 웹 컷오버: `develop` → `main`을 fast-forward 푸시(`fc70f27`), Production 배포 Ready, 운영 도메인 `devinterviewkr.vercel.app`에서 `/`·`/privacy`·`/terms`·`/me/login`·`/interview`·`/api/parse-pdf` 응답 확인. Supabase Site URL을 `http://localhost:3000`에서 운영 도메인으로 변경(허용 목록 유지)
+- iOS 출시 빌드: `env/prod.json` 생성(`.gitignore`에 추가, #67), iPhone 전용으로 변경(`TARGETED_DEVICE_FAMILY=1`, #68), `flutter build ipa` 후 `xcodebuild -exportArchive`(destination upload)로 Xcode 로그인 계정을 이용해 App Store Connect에 업로드(1.0.0, 빌드 1). IPA의 서명(Store 프로필, get-task-allow 0)·Sign in with Apple 권한·Privacy Manifest 포함을 직접 확인
+- App Store Connect 입력(사용자가 화면에서 입력, 제가 값 정리): 이름 `DevInterview - 개발자 면접`, 부제 `서술형 문제풀이와 이력서 맞춤 AI 면접`, 카테고리 교육/비즈니스, 연령 등급 4+, 앱 개인정보 6개 항목 게시, 심사 메모(영문), 지원 URL `/terms`, 콘텐츠 권한 안내. 스크린샷은 시뮬레이터(iPhone 17 Pro Max)에서 임시 통합 테스트로 6장 자동 촬영해 허용 크기(1206×2622)로 만들어 올림. **사용자가 심사에 제출했다고 알려옴**(심사 상태는 직접 확인하지 못함)
+- 디스크가 가득 차(여유 181MB) 시뮬레이터 빌드가 실패해 `build/`·`webapp/.next`·Xcode DerivedData를 지워 8.9GB 확보
+- 시도했지만 못 한 것: cmux 컴퓨터 제어(Computer Use 도우미가 실행되지 않아 사용 못 함), 자동 촬영에서 면접 두 번째 메시지가 전송되지 않은 현상의 원인 확인
+
+### 주요 변경 파일
+- lib/main.dart, lib/features/me/presentation/(account_actions.dart, me_page.dart, settings_page.dart), lib/features/practice/presentation/question_detail_page.dart, lib/features/auth/(data/auth_actions.dart, presentation/auth_providers.dart)
+- webapp/components/(app-shell.tsx, use-account.ts, views/me-view.tsx, views/question-detail-view.tsx, views/privacy-view.tsx, views/terms-view.tsx)
+- ios/Runner.xcodeproj/project.pbxproj, .gitignore, docs/plans/app-store-listing.md, docs/architecture.md
