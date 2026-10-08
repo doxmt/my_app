@@ -25,7 +25,7 @@ class _FakeAuthActions implements AuthActions {
   @override
   Future<void> deleteAccount() async {
     deleteCalls++;
-    if (fail) throw const AuthActionException('계정 삭제에 실패했습니다. 다시 시도해주세요.');
+    if (fail) throw const AuthActionException('회원탈퇴에 실패했습니다. 다시 시도해주세요.');
   }
 
   @override
@@ -61,11 +61,11 @@ Future<void> _open(WidgetTester tester) async {
 }
 
 void main() {
-  testWidgets('비회원에게는 계정 삭제가 보이지 않는다', (tester) async {
+  testWidgets('비회원에게는 회원탈퇴가 보이지 않는다', (tester) async {
     await tester.pumpWidget(_settings(userId: null, actions: _FakeAuthActions()));
     await _open(tester);
 
-    expect(find.text('계정 삭제'), findsNothing);
+    expect(find.text('회원탈퇴'), findsNothing);
   });
 
   testWidgets('확인 대화상자에서 취소하면 삭제하지 않는다', (tester) async {
@@ -73,7 +73,7 @@ void main() {
     await tester.pumpWidget(_settings(userId: 'user-1', actions: actions));
     await _open(tester);
 
-    await tester.tap(find.text('계정 삭제'));
+    await tester.tap(find.text('회원탈퇴'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('취소'));
     await tester.pumpAndSettle();
@@ -87,14 +87,14 @@ void main() {
     await tester.pumpWidget(_settings(userId: 'user-1', actions: actions));
     await _open(tester);
 
-    await tester.tap(find.text('계정 삭제'));
+    await tester.tap(find.text('회원탈퇴'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('삭제'));
+    await tester.tap(find.text('탈퇴'));
     await tester.pumpAndSettle();
 
     expect(actions.deleteCalls, 1);
     expect(find.text('설정'), findsNothing);
-    expect(find.text('계정이 삭제되었습니다.'), findsOneWidget);
+    expect(find.text('회원탈퇴가 완료되었습니다.'), findsOneWidget);
   });
 
   testWidgets('삭제가 실패하면 오류를 알리고 화면에 남는다', (tester) async {
@@ -102,12 +102,12 @@ void main() {
     await tester.pumpWidget(_settings(userId: 'user-1', actions: actions));
     await _open(tester);
 
-    await tester.tap(find.text('계정 삭제'));
+    await tester.tap(find.text('회원탈퇴'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('삭제'));
+    await tester.tap(find.text('탈퇴'));
     await tester.pumpAndSettle();
 
-    expect(find.text('계정 삭제에 실패했습니다. 다시 시도해주세요.'), findsOneWidget);
+    expect(find.text('회원탈퇴에 실패했습니다. 다시 시도해주세요.'), findsOneWidget);
     expect(find.text('설정'), findsOneWidget);
   });
 

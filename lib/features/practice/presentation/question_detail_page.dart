@@ -155,10 +155,8 @@ class _QuestionDetailPageState extends ConsumerState<QuestionDetailPage> {
               final nextId = index < questions.length - 1 ? questions[index + 1].id : null;
               // 주제 범위는 이 주제에 다른 문제가 있을 때만, 분야 범위는 누를 때 풀을 불러와 확인한다.
               final randomScope = widget.randomScope;
-              final showNextRandom =
-                  widget.mode == PracticeMode.study &&
-                  randomScope != null &&
-                  (randomScope == RandomScope.field || questions.length > 1);
+              final isRandomStudy = widget.mode == PracticeMode.study && randomScope != null;
+              final showNextRandom = isRandomStudy && (randomScope == RandomScope.field || questions.length > 1);
 
               return SingleChildScrollView(
                 padding: const EdgeInsets.all(16),
@@ -182,19 +180,22 @@ class _QuestionDetailPageState extends ConsumerState<QuestionDetailPage> {
                         onSave: () => _saveToWrongNotes(question, topic.id),
                       ),
                     const SizedBox(height: 32),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        OutlinedButton(
-                          onPressed: previousId == null ? null : () => _goTo(previousId),
-                          child: const Text('이전'),
-                        ),
-                        OutlinedButton(
-                          onPressed: nextId == null ? null : () => _goTo(nextId),
-                          child: const Text('다음'),
-                        ),
-                      ],
-                    ),
+                    // 랜덤 학습에서는 주제 순서대로 가는 이전/다음을 숨긴다. 누르면 랜덤 범위(`?random=`)가 사라져
+                    // "다음 랜덤 문제"가 없어지기 때문이다.
+                    if (!isRandomStudy)
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          OutlinedButton(
+                            onPressed: previousId == null ? null : () => _goTo(previousId),
+                            child: const Text('이전'),
+                          ),
+                          OutlinedButton(
+                            onPressed: nextId == null ? null : () => _goTo(nextId),
+                            child: const Text('다음'),
+                          ),
+                        ],
+                      ),
                     if (showNextRandom) ...[
                       const SizedBox(height: 16),
                       SizedBox(

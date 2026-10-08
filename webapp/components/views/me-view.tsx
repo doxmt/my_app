@@ -44,6 +44,7 @@ export function MeView() {
   const [deleteError, setDeleteError] = useState(false);
 
   async function signOut() {
+    if (!window.confirm("로그아웃 하시겠어요?")) return;
     setSignOutError(false);
     const { error } = await getBrowserClient().auth.signOut();
     if (error) setSignOutError(true);
@@ -51,7 +52,7 @@ export function MeView() {
 
   async function deleteAccount() {
     const confirmed = window.confirm(
-      "계정과 계정에 저장된 오답노트·이력서·면접 기록이 바로 삭제되며 되돌릴 수 없습니다. 삭제할까요?",
+      "회원탈퇴 하시겠어요? 계정과 계정에 저장된 오답노트·이력서·면접 기록이 바로 삭제되며 되돌릴 수 없습니다.",
     );
     if (!confirmed) return;
     setDeleteError(false);
@@ -114,11 +115,11 @@ export function MeView() {
           {userId && (
             <div className="mt-4 border-t pt-4">
               <Button variant="ghost" size="sm" className="text-destructive" onClick={deleteAccount} disabled={deleting}>
-                {deleting ? "삭제 중…" : "계정 삭제"}
+                {deleting ? "탈퇴 중…" : "회원탈퇴"}
               </Button>
               {deleteError && (
                 <p role="alert" className="mt-2 text-sm text-destructive">
-                  계정 삭제에 실패했습니다. 다시 시도해주세요.
+                  회원탈퇴에 실패했습니다. 다시 시도해주세요.
                 </p>
               )}
             </div>

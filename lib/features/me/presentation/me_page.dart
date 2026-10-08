@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/supabase/supabase_client_provider.dart';
 import '../../../core/theme/theme_mode_provider.dart';
 import '../../auth/presentation/auth_providers.dart';
+import 'account_actions.dart';
 
 /// 내 정보 탭. 로그인 진입점(또는 계정 정보)과 이력서·오답노트 메뉴 항목을 보여준다.
 class MePage extends ConsumerWidget {
@@ -42,7 +43,7 @@ class MePage extends ConsumerWidget {
               ),
               subtitle: user.email == null ? null : Text(user.email!),
               trailing: TextButton(
-                onPressed: () => ref.read(authActionsProvider).signOut(),
+                onPressed: () => confirmAndSignOut(context, ref),
                 child: const Text('로그아웃'),
               ),
             )
@@ -94,6 +95,11 @@ class MePage extends ConsumerWidget {
             trailing: const Icon(Icons.chevron_right),
             onTap: () => context.go('/me/wrong-notes'),
           ),
+          if (user != null)
+            ListTile(
+              title: Text('회원탈퇴', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+              onTap: () => confirmAndDeleteAccount(context, ref),
+            ),
         ],
       ),
     );

@@ -84,6 +84,7 @@ function AccountArea({ onNavigate }: { onNavigate?: () => void }) {
   }
 
   async function signOut() {
+    if (!window.confirm("로그아웃 하시겠어요?")) return;
     setSignOutError(false);
     const { error } = await getBrowserClient().auth.signOut();
     if (error) setSignOutError(true);

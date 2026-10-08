@@ -71,6 +71,21 @@ void main() {
     expect(find.text('다음 랜덤 문제'), findsNothing);
   });
 
+  testWidgets('랜덤 학습에서는 이전/다음 버튼을 숨기고 일반 학습에서는 보여준다', (tester) async {
+    final questions = [_question('q1', 't1'), _question('q2', 't1')];
+
+    await tester.pumpWidget(_app(scope: RandomScope.topic, dsQuestions: questions, osQuestions: [_question('q3', 't2')]));
+    await tester.pumpAndSettle();
+    expect(find.text('이전'), findsNothing);
+    expect(find.text('다음'), findsNothing);
+    expect(find.text('다음 랜덤 문제'), findsOneWidget);
+
+    await tester.pumpWidget(_app(dsQuestions: questions));
+    await tester.pumpAndSettle();
+    expect(find.text('이전'), findsOneWidget);
+    expect(find.text('다음'), findsOneWidget);
+  });
+
   testWidgets('random=topic이면 버튼이 보이고 같은 주제의 다른 문제로 이동한다', (tester) async {
     await tester.pumpWidget(
       _app(

@@ -35,7 +35,7 @@ lib/
     resume/            이력서 입력
     interview/         모의면접 채팅 (남은 사용량 배너 포함)
     auth/              OAuth 로그인 (Kakao/GitHub, iOS는 Apple 네이티브), 계정 삭제, 로그인 시 로컬 데이터(오답노트·이력서) 자동 이전
-    me/                내 정보, 설정 화면(방침·약관 링크, 앱 버전, 계정 삭제)
+    me/                내 정보, 설정 화면(방침·약관 링크, 앱 버전), 회원탈퇴, 로그아웃·회원탈퇴 확인 팝업
 
 api/                   Vercel Node 서버리스 함수 (parse-pdf.ts, PDF 텍스트 추출). Root Directory가 `webapp/`이 되면 빌드에서 쓰이지 않으며 컷오버 안정화 후 정리
 
@@ -132,7 +132,7 @@ OAuth 로그인 → 기기의 오답노트·이력서를 DB로 업로드 (자동
   → 한도: guest → free
 
 [계정 삭제 — ADR-026]
-앱 설정 화면 / 웹 내 정보의 "계정 삭제" → 확인 → (Apple 회원은 재인증으로 authorizationCode 획득)
+앱 내 정보·설정 화면 / 웹 내 정보의 "회원탈퇴" → 확인 팝업 → (Apple 회원은 재인증으로 authorizationCode 획득)
   → delete-account (JWT) → (Apple 회원: 코드 교환 → refresh token 철회) → auth.admin.deleteUser → FK cascade
   → 기기 세션 정리 → 비회원 상태
 

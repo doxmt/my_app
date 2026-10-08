@@ -1,10 +1,6 @@
-import 'dart:async';
-
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:url_launcher/url_launcher.dart' show closeInAppWebView;
 
 import '../../../app/app_config.dart';
 import '../../../core/storage/local_json_store.dart';
@@ -82,10 +78,6 @@ class CurrentUserIdNotifier extends Notifier<String?> {
       return;
     }
 
-    if (change.event == AuthChangeEvent.signedIn && !kIsWeb) {
-      unawaited(_closeInAppBrowser());
-    }
-
     final needsMigrationCheck =
         change.event == AuthChangeEvent.signedIn || change.event == AuthChangeEvent.initialSession;
 
@@ -97,13 +89,5 @@ class CurrentUserIdNotifier extends Notifier<String?> {
     state = null;
     await ref.read(localDataMigrationServiceProvider).migrateIfNeeded(userId);
     state = userId;
-  }
-
-  /// 카카오·깃허브 로그인은 iOS에서 인앱 브라우저로 열리는데, 복귀 스킴으로 앱에 돌아와도 자동으로 닫히지 않는다.
-  /// 로그인이 확인되면 남아 있는 창을 닫는다. 열려 있는 창이 없거나 지원하지 않는 플랫폼이면 무시한다.
-  Future<void> _closeInAppBrowser() async {
-    try {
-      await closeInAppWebView();
-    } catch (_) {}
   }
 }
