@@ -206,3 +206,22 @@
 - `docs/plans/ios-release-cutover.md`, `docs/plans/open-questions.md`(계획 단계)
 - #62: `lib/features/practice/domain/random_pick.dart`, `lib/features/practice/presentation/{topic_list_page,question_list_page,question_detail_page}.dart`, `lib/app/router.dart`, `webapp/lib/random-pick.ts`, `webapp/components/views/{topic-list-view,question-list-view,question-detail-view}.tsx`, `webapp/app/categories/[field]/[mode]/[topic]/[questionId]/page.tsx`, 관련 테스트
 - `docs/work_log.md`, `docs/current_state.md`
+
+## 2026-10-08
+(이 세션: 10/3~10/8, iOS 출시 준비. 사용자가 "너가 다 해줘"로 위임해 PR 20개를 올려 머지했다)
+- 방침·약관 페이지·설정 화면·OpenAI 전송 동의 화면(#38), 방침의 위탁업체 연락처 채움(OpenAI는 원문이 403이라 검색 결과로 확인), 운영자 표기를 개인 개발자 기준으로 변경하고 이름·이메일 기재(#57)
+- 계정 삭제 `delete-account` 함수 + 앱·웹 버튼(#40), 원격 배포·무인증 401·FK cascade 확인. Apple 토큰 철회(#48): .p8로 ES256 client_secret 생성 → 코드 교환 → 철회, 실패하면 삭제하지 않음
+- Apple 로그인 iOS 전용 재도입(#42), iOS 출시 자산: AppIcon·LaunchImage 로고 교체, `PrivacyInfo.xcprivacy`, `ITSAppUsesNonExemptEncryption`(#44), 구글 버튼 숨김(#46, 이후 다른 세션이 10/7에 복원)
+- CI에 Deno 테스트 잡(#50), 앱 4MB 초과 PDF 사전 차단(#51), 비회원 카운터 30일 후 삭제 pg_cron(#52), 회원 새 면접 시 이전 세션 completed(#53, 기존엔 예전 대화가 새 면접에 섞이는 버그), 웹 404·오류 화면(#54), 난이도 필터(#55), DB advisor 보강(#58), 패키지 소폭 업데이트·Android 아이콘(#59), 홈 분야 카드 주제·문제 수(#60), App Store 등록 자료 초안(#61), 설계 문서 반영 ADR-025~027(#49·#56)
+- 운영 DB·함수 변경: 마이그레이션 3개 원격 적용(`20261004000000` 카운터 삭제, `20261004010000` service_role 세션 update, `20261004020000` advisor 보강), `interview-chat`·`delete-account` 재배포. 세션 update 권한 적용 전에 `interview-chat`을 먼저 배포해 몇 분간 회원의 새 면접이 실패할 수 있었다(바로 권한 적용)
+- Supabase: Apple provider 켬(Client ID 번들 ID), secrets `APPLE_TEAM_ID`·`APPLE_CLIENT_ID`(10/4)·`APPLE_KEY_ID`(`6SR3YFD68P`)·`APPLE_PRIVATE_KEY`(10/8) 등록. Apple 서버가 이 키의 서명을 받아들이는 것을 가짜 코드로 확인(`invalid_grant`만 돌아옴)
+- 사용자가 Apple Developer에서 App ID의 Sign in with Apple과 키(.p8)를 발급. iPhone 개발자 모드 활성화 후 실기기에 개발용 빌드 설치
+- 실기기 카카오 로그인이 Safari `localhost`로 빠지는 문제: 원인은 로컬 `env/dev.json`에 `AUTH_REDIRECT_URL`이 없어 Supabase가 Site URL(`http://localhost:3000`)로 돌려보낸 것. 값 추가 후 재설치(재시도 결과는 미확인)
+- 검증: 매 PR마다 flutter analyze·test, webapp lint·tsc·test·build, Deno 테스트 통과 후 CI 통과 확인하고 머지. 화면은 실기기·브라우저에서 직접 확인하지 못했다(홈 카드, 난이도 필터, 404·오류 화면, 설정·계정 삭제 화면)
+
+### 주요 변경 파일
+- supabase/functions/delete-account/(handler.ts, apple_revoke.ts, index.ts, 테스트), supabase/functions/interview-chat/(index.ts, _shared/prompt.ts)
+- supabase/migrations/20261004000000_purge_guest_daily_usage.sql, 20261004010000_grant_service_role_interview_sessions_update.sql, 20261004020000_advisor_hardening.sql
+- lib/features/auth/(apple_auth_client.dart, auth_actions.dart, login_buttons.dart, login_page.dart), lib/features/me/presentation/settings_page.dart, lib/core/(consent, legal)
+- webapp/components/views/(privacy-view.tsx, terms-view.tsx, me-view.tsx, home-view.tsx, question-list-view.tsx), webapp/app/(privacy, terms, not-found.tsx, error.tsx)
+- ios/Runner/(PrivacyInfo.xcprivacy, Info.plist, Runner.entitlements, Assets.xcassets), .github/workflows/ci.yml, docs/(adr.md, architecture.md, roadmap.md, prd.md, plans/app-store-listing.md)
