@@ -9,7 +9,7 @@
 
 | 항목 | 값 |
 |---|---|
-| 앱 이름 (30자) | 개발자 면접 - DevInterview |
+| 앱 이름 (30자) | DevInterview - 개발자 면접 |
 | 부제 (30자) | 서술형 문제풀이와 AI 모의면접 |
 | 번들 ID | `com.doxmt.devinterview` |
 | 기본 언어 | 한국어 |
