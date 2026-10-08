@@ -103,7 +103,7 @@
 - 범위: iOS 출시 + 웹 컷오버. Android 스토어 출시는 이후 (ADR-025). 계획: `docs/plans/ios-release-cutover.md`
 - 방침·약관(`/privacy`·`/terms`) + 면접 첫 사용 OpenAI 전송 동의 (ADR-027)
 - 계정 삭제(`delete-account`, Apple 토큰 철회 포함) (ADR-026)
-- Apple 로그인 재도입(iOS 앱 전용), 첫 출시에서 구글 로그인 버튼 숨김 (ADR-025)
+- Apple 로그인 재도입(iOS 앱 전용), 구글 로그인은 첫 출시에서 숨겼다가 앱·웹 모두 복원 (ADR-025 정정)
 - iOS 출시 자산: 앱 아이콘·스플래시·Privacy Manifest·암호화 신고 키
 - 웹 컷오버: 브라우저별 실측 후 develop → main 릴리즈 push 1회, Supabase Site URL을 운영 도메인으로
 - App Store Connect 등록 → TestFlight → 심사 제출

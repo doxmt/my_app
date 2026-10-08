@@ -251,6 +251,8 @@
 대안: Apple 로그인을 웹·Android에도 리다이렉트로 제공(Services ID·시크릿 갱신 부담), 소셜 로그인을 모두 빼고 출시, Android 먼저 출시.
 트레이드오프: Apple로 가입한 회원은 웹·Android에서 로그인할 수 없다. Apple은 이름을 최초 로그인에서만 주므로 그때 `updateUser`로 `full_name`에 저장한다. 계정 삭제의 토큰 철회 때문에 .p8 키 보관은 결국 필요하다(ADR-026).
 
+**정정 (2026-10-07):** 구글 로그인 버튼을 앱·웹 모두 복원했다. 숨긴 이유였던 앱용 OAuth 클라이언트를 iOS용으로 만들고(Android는 Android 출시 때), Supabase Google provider에 웹·iOS 클라이언트 ID를 등록했다. `google_sign_in`이 nonce를 지원하지 않아 Supabase `Skip nonce check`를 켰다 — Supabase 문서가 경고하듯 ID 토큰 재전송 방어가 약해지는 트레이드오프를 감수한다. 웹 로그인은 Supabase 리다이렉트라 Google 계정 선택 화면에 `…supabase.co(으)로 이동`이 보이며, 앱 이름 표시는 커스텀 도메인이 있어야 가능하다.
+
 ---
 
 ## ADR-026: 계정 삭제는 Edge Function에서 service_role로 즉시 처리하고 Apple 토큰을 철회한다

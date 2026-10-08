@@ -299,7 +299,7 @@ function JobSetupForm({
 function usageBannerText(usage: UsageStatus | null): string {
   if (usage === null) return "오늘 남은 면접 횟수를 확인하는 중입니다.";
   if (usage.kind === "guest") {
-    return `오늘 남은 면접 횟수: ${usage.deviceRemaining}회 (네트워크 전체 ${usage.ipRemaining}회)`;
+    return `오늘 남은 면접 횟수: ${usage.deviceRemaining}회`;
   }
   return `오늘 남은 면접 횟수: ${usage.remaining}회`;
 }

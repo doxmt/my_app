@@ -77,8 +77,8 @@ export function QuestionDetailView({
 
   const modeLabel = mode === "study" ? "학습하기" : "문제풀기";
   // 주제 범위는 이 주제에 다른 문제가 있을 때만, 분야 범위는 누를 때 풀을 불러와 확인한다.
-  const showNextRandom =
-    mode === "study" && randomScope !== null && (randomScope === "field" || data.questions.length > 1);
+  const isRandomStudy = mode === "study" && randomScope !== null;
+  const showNextRandom = isRandomStudy && (randomScope === "field" || data.questions.length > 1);
 
   // 현재 문제를 뺀 범위 안에서 무작위로 골라 replace로 이동한다(뒤로 가기 기록이 쌓이지 않는다). 범위 쿼리는 유지한다.
   async function goToNextRandom() {
@@ -162,24 +162,27 @@ export function QuestionDetailView({
         </div>
       </div>
 
-      <nav aria-label="문제 이동" className="mt-8 flex items-center justify-between border-t pt-6">
-        <Button
-          variant="outline"
-          size="lg"
-          disabled={previousId === null}
-          onClick={() => previousId && goTo(previousId)}
-        >
-          <ChevronLeft aria-hidden />
-          이전
-        </Button>
-        <span className="font-mono text-xs text-muted-foreground">
-          {index + 1} / {data.questions.length}
-        </span>
-        <Button variant="outline" size="lg" disabled={nextId === null} onClick={() => nextId && goTo(nextId)}>
-          다음
-          <ChevronRight aria-hidden />
-        </Button>
-      </nav>
+      {/* 랜덤 학습에서는 이전/다음을 숨긴다. 누르면 랜덤 범위(`?random=`)가 사라져 "다음 랜덤 문제"가 없어진다. */}
+      {!isRandomStudy && (
+        <nav aria-label="문제 이동" className="mt-8 flex items-center justify-between border-t pt-6">
+          <Button
+            variant="outline"
+            size="lg"
+            disabled={previousId === null}
+            onClick={() => previousId && goTo(previousId)}
+          >
+            <ChevronLeft aria-hidden />
+            이전
+          </Button>
+          <span className="font-mono text-xs text-muted-foreground">
+            {index + 1} / {data.questions.length}
+          </span>
+          <Button variant="outline" size="lg" disabled={nextId === null} onClick={() => nextId && goTo(nextId)}>
+            다음
+            <ChevronRight aria-hidden />
+          </Button>
+        </nav>
+      )}
       {showNextRandom && (
         <div className="mt-4 flex flex-col items-center gap-2">
           <Button size="lg" className="w-full sm:w-auto" disabled={pickingRandom} onClick={goToNextRandom}>

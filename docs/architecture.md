@@ -4,7 +4,7 @@
 
 - **앱**: Flutter (Android / iOS), Riverpod(상태관리), go_router(라우팅). Web은 Flutter 웹 빌드가 컷오버 전까지 Production, 컷오버 후에는 아래 Next.js 웹이 대체한다 (ADR-019)
 - **웹**: `webapp/` Next.js 16 (App Router, TypeScript, Tailwind v4 + shadcn/ui, Vitest). 클라이언트 컴포넌트 중심, 비회원 데이터는 localStorage. Supabase는 `@supabase/ssr`(브라우저 `createBrowserClient`, 서버 `createServerClient`), 세션 갱신은 `proxy.ts`(`getClaims()`). env는 `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` / `ALLOWED_ORIGINS`(PDF 함수 CORS)
-- **백엔드**: Supabase — Postgres(+pgvector), Auth(OAuth: Kakao/GitHub + iOS 앱 전용 Apple, 구글은 첫 출시에서 버튼 숨김, ADR-025), Edge Functions(Deno)
+- **백엔드**: Supabase — Postgres(+pgvector), Auth(OAuth: Kakao/Google/GitHub + iOS 앱 전용 Apple, 앱의 구글은 네이티브 ID 토큰 + `skip_nonce_check`, ADR-025 정정), Edge Functions(Deno)
 - **LLM**: Anthropic / OpenAI — Edge Function 내부 어댑터로 교체 가능 (`LLM_PROVIDER` env var)
 - **PDF 추출**: Vercel Node 서버리스 함수 (`unpdf` 라이브러리). 컷오버 전에는 루트 `api/parse-pdf.ts`(Flutter 웹과 함께 배포), 이후에는 `webapp/app/api/parse-pdf/route.ts`(Route Handler, raw 바이트 본문, 같은 경로 `/api/parse-pdf`)가 이어받고 모바일 앱도 이 엔드포인트를 쓴다
 - **어드민**: 별도 웹앱, Vite + React + TypeScript, Tailwind v4 + shadcn/ui (M5-a). 로그인은 고정 관리자 계정 + 비밀번호 전용 화면(`signInWithPassword` 내부 호출, ADR-016)
@@ -35,7 +35,7 @@ lib/
     resume/            이력서 입력
     interview/         모의면접 채팅 (남은 사용량 배너 포함)
     auth/              OAuth 로그인 (Kakao/GitHub, iOS는 Apple 네이티브), 계정 삭제, 로그인 시 로컬 데이터(오답노트·이력서) 자동 이전
-    me/                내 정보, 설정 화면(방침·약관 링크, 앱 버전, 계정 삭제)
+    me/                내 정보, 설정 화면(방침·약관 링크, 앱 버전), 회원탈퇴, 로그아웃·회원탈퇴 확인 팝업
 
 api/                   Vercel Node 서버리스 함수 (parse-pdf.ts, PDF 텍스트 추출). Root Directory가 `webapp/`이 되면 빌드에서 쓰이지 않으며 컷오버 안정화 후 정리
 
@@ -132,7 +132,7 @@ OAuth 로그인 → 기기의 오답노트·이력서를 DB로 업로드 (자동
   → 한도: guest → free
 
 [계정 삭제 — ADR-026]
-앱 설정 화면 / 웹 내 정보의 "계정 삭제" → 확인 → (Apple 회원은 재인증으로 authorizationCode 획득)
+앱 내 정보·설정 화면 / 웹 내 정보의 "회원탈퇴" → 확인 팝업 → (Apple 회원은 재인증으로 authorizationCode 획득)
   → delete-account (JWT) → (Apple 회원: 코드 교환 → refresh token 철회) → auth.admin.deleteUser → FK cascade
   → 기기 세션 정리 → 비회원 상태
 
