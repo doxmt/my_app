@@ -419,8 +419,7 @@ class _ChatViewState extends ConsumerState<_ChatView> {
   String _usageBannerText() {
     return switch (_usage) {
       null => '오늘 남은 면접 횟수를 확인하는 중입니다.',
-      GuestUsageStatus(:final deviceRemaining, :final ipRemaining) =>
-        '오늘 남은 면접 횟수: $deviceRemaining회 (네트워크 전체 $ipRemaining회)',
+      GuestUsageStatus(:final deviceRemaining) => '오늘 남은 면접 횟수: $deviceRemaining회',
       MemberUsageStatus(:final remaining) => '오늘 남은 면접 횟수: $remaining회',
     };
   }

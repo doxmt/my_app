@@ -38,7 +38,7 @@
 | 항목 | 내용 |
 |---|---|
 | 현재 Vercel 빌드 | 루트 `vercel.json`: installCommand `npm install`, buildCommand `bash scripts/vercel-build.sh`, outputDirectory `build/web`, SPA rewrite. 빌드 스크립트가 Flutter stable을 clone해 `flutter build web --release` + `--dart-define`(SUPABASE_URL / SUPABASE_PUBLISHABLE_KEY / `PDF_PARSE_BASE_URL="https://$VERCEL_URL"`). 루트 `package.json`은 `unpdf` 1.8.1 + `@types/node`뿐. `admin/vercel.json`은 rewrite만, 별도 프로젝트 |
-| PDF 함수 | `api/parse-pdf.ts` — Node 기본 런타임(`export const config` 없음), 본문 4MB 상한(`MAX_BODY_BYTES`), 최대 20페이지, CORS는 env `ALLOWED_ORIGINS`와 origin **정확 일치**, 허용 헤더 `Content-Type`만. 모바일 앱은 `env/dev.json`의 `PDF_PARSE_BASE_URL`(현재 `https://myapp-teal-mu.vercel.app`) + `/api/parse-pdf`를 호출 |
+| PDF 함수 | `api/parse-pdf.ts` — Node 기본 런타임(`export const config` 없음), 본문 4MB 상한(`MAX_BODY_BYTES`), 최대 20페이지, CORS는 env `ALLOWED_ORIGINS`와 origin **정확 일치**, 허용 헤더 `Content-Type`만. 모바일 앱은 `env/dev.json`의 `PDF_PARSE_BASE_URL`(현재 `https://devinterviewkr.vercel.app`) + `/api/parse-pdf`를 호출 |
 | `interview-chat` | CORS `*`, 허용 헤더 `authorization, apikey, content-type, x-device-id`. 본문 `{categoryName?, jobTitle?, resumeText?(비회원 필수), history?, message(필수)}`. SSE 이벤트 `usage`(비회원 `{deviceRemaining, ipRemaining}` / 회원 `{tier:'free', remaining}`), `delta`(`{text}`), `done`(`{}`), `error`(`{code, message}`), 형식 `event: <이름>\ndata: <JSON>\n\n` |
 | IP 한도 | `_shared/rate_limit.ts`의 `extractClientIp`가 요청 IP를 뽑는다. **브라우저가 Edge Function을 직접 호출하면 그대로 유효. Next 서버를 경유하면 모든 요청이 Vercel IP로 잡혀 IP 한도가 무너진다** |
 | 비회원 로컬 형식 | 키 `wrong_notes` / `resume` / `interview_session`, 각 값 `{ version: 1, items: [...] }`. 기기 ID 키 `device_id`(UUID v4) |

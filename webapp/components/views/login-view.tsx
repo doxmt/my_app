@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { getBrowserClient } from "@/lib/supabase/client";
 
-type Provider = "kakao" | "github";
+type Provider = "kakao" | "google" | "github";
 
 const BUTTON_BASE = "flex h-11 w-full items-center gap-2.5 px-4 text-sm font-medium disabled:opacity-50";
 
@@ -49,6 +49,15 @@ export function LoginView({ next, failed }: { next: string; failed: boolean }) {
           >
             <Image src="/login/kakao_symbol.png" alt="" width={19} height={18} />
             <span className="flex-1 text-center">카카오 로그인</span>
+          </button>
+          <button
+            type="button"
+            disabled={loading}
+            onClick={() => signIn("google", "Google 로그인에 실패했습니다. 다시 시도해주세요.")}
+            className={`${BUTTON_BASE} rounded border border-[#747775] bg-white text-[#1F1F1F]`}
+          >
+            <Image src="/login/google_g.png" alt="" width={20} height={20} />
+            <span className="flex-1 text-center">Google 계정으로 로그인</span>
           </button>
           <button
             type="button"

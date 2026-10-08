@@ -4,7 +4,7 @@
 
 - **앱**: Flutter (Android / iOS), Riverpod(상태관리), go_router(라우팅). Web은 Flutter 웹 빌드가 컷오버 전까지 Production, 컷오버 후에는 아래 Next.js 웹이 대체한다 (ADR-019)
 - **웹**: `webapp/` Next.js 16 (App Router, TypeScript, Tailwind v4 + shadcn/ui, Vitest). 클라이언트 컴포넌트 중심, 비회원 데이터는 localStorage. Supabase는 `@supabase/ssr`(브라우저 `createBrowserClient`, 서버 `createServerClient`), 세션 갱신은 `proxy.ts`(`getClaims()`). env는 `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` / `ALLOWED_ORIGINS`(PDF 함수 CORS)
-- **백엔드**: Supabase — Postgres(+pgvector), Auth(OAuth: Kakao/GitHub + iOS 앱 전용 Apple, 구글은 첫 출시에서 버튼 숨김, ADR-025), Edge Functions(Deno)
+- **백엔드**: Supabase — Postgres(+pgvector), Auth(OAuth: Kakao/Google/GitHub + iOS 앱 전용 Apple, 앱의 구글은 네이티브 ID 토큰 + `skip_nonce_check`, ADR-025 정정), Edge Functions(Deno)
 - **LLM**: Anthropic / OpenAI — Edge Function 내부 어댑터로 교체 가능 (`LLM_PROVIDER` env var)
 - **PDF 추출**: Vercel Node 서버리스 함수 (`unpdf` 라이브러리). 컷오버 전에는 루트 `api/parse-pdf.ts`(Flutter 웹과 함께 배포), 이후에는 `webapp/app/api/parse-pdf/route.ts`(Route Handler, raw 바이트 본문, 같은 경로 `/api/parse-pdf`)가 이어받고 모바일 앱도 이 엔드포인트를 쓴다
 - **어드민**: 별도 웹앱, Vite + React + TypeScript, Tailwind v4 + shadcn/ui (M5-a). 로그인은 고정 관리자 계정 + 비밀번호 전용 화면(`signInWithPassword` 내부 호출, ADR-016)
