@@ -56,6 +56,7 @@ _flutter/
 
 # Local env (Supabase 키). env/dev.json.example만 커밋한다.
 env/dev.json
+env/prod.json
 
 # Node (api/parse-pdf.ts 의존성 설치용)
 node_modules/
