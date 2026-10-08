@@ -37,11 +37,9 @@ class MePage extends ConsumerWidget {
                 (user.userMetadata?['full_name'] ??
                         user.userMetadata?['name'] ??
                         user.userMetadata?['nickname'] ??
-                        user.email ??
                         '회원')
                     .toString(),
               ),
-              subtitle: user.email == null ? null : Text(user.email!),
               trailing: TextButton(
                 onPressed: () => confirmAndSignOut(context, ref),
                 child: const Text('로그아웃'),

@@ -37,7 +37,7 @@ function MenuLink({
 
 /** 내 정보. 계정 상태와 이력서·오답노트 바로가기. */
 export function MeView() {
-  const { userId, displayName, email } = useAccount();
+  const { userId, displayName } = useAccount();
   const router = useRouter();
   const [signOutError, setSignOutError] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -86,7 +86,6 @@ export function MeView() {
               </span>
               <div className="min-w-0 flex-1">
                 <p className="truncate font-semibold">{displayName ?? "회원"}</p>
-                {email && <p className="truncate text-sm text-muted-foreground">{email}</p>}
                 <p className="mt-1 text-xs text-muted-foreground">오답노트와 이력서가 계정에 저장됩니다.</p>
               </div>
               <Button variant="outline" onClick={signOut}>

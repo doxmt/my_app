@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../auth/domain/auth_exception.dart';
 import '../../auth/presentation/auth_providers.dart';
 
+/// 앱 디자인에 맞춘 확인 팝업. 가운데 정렬 제목·안내 아래에 [취소]와 확인 버튼을 나란히 둔다.
 Future<bool> _confirm(
   BuildContext context, {
   required String title,
@@ -13,18 +14,61 @@ Future<bool> _confirm(
 }) async {
   final confirmed = await showDialog<bool>(
     context: context,
-    builder: (context) => AlertDialog(
-      title: Text(title),
-      content: message == null ? null : Text(message),
-      actions: [
-        TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('취소')),
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(true),
-          style: destructive ? TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error) : null,
-          child: Text(confirmLabel),
+    builder: (context) {
+      final theme = Theme.of(context);
+      final scheme = theme.colorScheme;
+      return Dialog(
+        backgroundColor: scheme.surface,
+        surfaceTintColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+              ),
+              if (message != null) ...[
+                const SizedBox(height: 12),
+                Text(
+                  message,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant, height: 1.5),
+                ),
+              ],
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.of(context).pop(false),
+                      style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+                      child: const Text('취소'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: () => Navigator.of(context).pop(true),
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size.fromHeight(48),
+                        backgroundColor: destructive ? scheme.error : null,
+                        foregroundColor: destructive ? scheme.onError : null,
+                      ),
+                      child: Text(confirmLabel),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
-      ],
-    ),
+      );
+    },
   );
   return confirmed == true;
 }

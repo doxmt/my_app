@@ -51,7 +51,7 @@ function Logo() {
 
 /** 우측 계정 영역. 비회원이면 로그인 버튼, 회원이면 계정 드롭다운. */
 function AccountArea({ onNavigate }: { onNavigate?: () => void }) {
-  const { userId, ready, displayName, email } = useAccount();
+  const { userId, ready, displayName } = useAccount();
   const [open, setOpen] = useState(false);
   const [signOutError, setSignOutError] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -118,7 +118,6 @@ function AccountArea({ onNavigate }: { onNavigate?: () => void }) {
         >
           <div className="px-3 py-2">
             <p className="truncate text-sm font-semibold">{name}</p>
-            {email && <p className="truncate text-xs text-muted-foreground">{email}</p>}
           </div>
           <div className="my-1 border-t" />
           <Link

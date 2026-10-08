@@ -61,7 +61,7 @@ void main() {
 
     await tester.tap(find.text('로그아웃 버튼'));
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(TextButton, '로그아웃'));
+    await tester.tap(find.widgetWithText(FilledButton, '로그아웃'));
     await tester.pumpAndSettle();
 
     expect(actions.signOutCalls, 1);
@@ -72,7 +72,7 @@ void main() {
 
     await tester.tap(find.text('로그아웃 버튼'));
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(TextButton, '로그아웃'));
+    await tester.tap(find.widgetWithText(FilledButton, '로그아웃'));
     await tester.pumpAndSettle();
 
     expect(find.text('로그아웃에 실패했습니다. 다시 시도해주세요.'), findsOneWidget);
